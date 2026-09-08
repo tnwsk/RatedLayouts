@@ -1,6 +1,9 @@
 #include "RLReportPopup.hpp"
 #include "RLConstants.hpp"
 #include "RLNetworkUtils.hpp"
+#include "utils/RLArgon.hpp"
+
+using namespace rl;
 
 RLReportPopup* RLReportPopup::create(int levelId) {
     RLReportPopup* popup = new RLReportPopup();
@@ -15,47 +18,49 @@ RLReportPopup* RLReportPopup::create(int levelId) {
 }
 
 bool RLReportPopup::init() {
-    if (!Popup::init(440.f, 280.f, "GJ_square02.png"))
-        return false;
+    if (!Popup::init(440.f, 280.f, "GJ_square02.png")) return false;
     setTitle("Rated Layouts Report Level");
     addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupBlue, false);
 
     // report
-    auto reportButtonSpr = ButtonSprite::create(
-        "Report Level",
-        "goldFont.fnt",
-        "GJ_button_06.png");
+    auto reportButtonSpr = ButtonSprite::create("Report Level", "goldFont.fnt", "GJ_button_06.png");
 
     auto reportButton = CCMenuItemSpriteExtra::create(
-        reportButtonSpr,
-        this,
-        menu_selector(RLReportPopup::onSubmit));
+        reportButtonSpr, this, menu_selector(RLReportPopup::onSubmit));
 
     m_buttonMenu->addChild(reportButton);
     reportButton->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, 25.f});
 
     m_reportBtnSpr = CCSprite::createWithSpriteFrameName("GJ_reportBtn_001.png");
-    m_reportBtnBtn = CCMenuItemSpriteExtra::create(m_reportBtnSpr, this, menu_selector(RLReportPopup::onVanillaReport));
+    m_reportBtnBtn = CCMenuItemSpriteExtra::create(
+        m_reportBtnSpr, this, menu_selector(RLReportPopup::onVanillaReport));
     m_reportBtnBtn->setPosition({10, 5});
     m_buttonMenu->addChild(m_reportBtnBtn);
 
     // info button
     auto infoSpr = CCSprite::createWithSpriteFrameName("RL_info01.png"_spr);
     infoSpr->setScale(0.7f);
-    auto infoBtn = CCMenuItemSpriteExtra::create(infoSpr, this, menu_selector(RLReportPopup::onInfo));
-    infoBtn->setPosition({m_mainLayer->getScaledContentSize().width - 25, m_mainLayer->getScaledContentSize().height - 25});
+    auto infoBtn =
+        CCMenuItemSpriteExtra::create(infoSpr, this, menu_selector(RLReportPopup::onInfo));
+    infoBtn->setPosition({m_mainLayer->getScaledContentSize().width - 25,
+                          m_mainLayer->getScaledContentSize().height - 25});
     m_buttonMenu->addChild(infoBtn);
 
     auto toggleMenu = CCMenu::create();
     auto toggleLayout = RowLayout::create();
-    toggleLayout->setGap(8.f)->setGrowCrossAxis(true)->setCrossAxisOverflow(false)->setAxisAlignment(AxisAlignment::Center);
+    toggleLayout->setGap(8.f)
+        ->setGrowCrossAxis(true)
+        ->setCrossAxisOverflow(false)
+        ->setAxisAlignment(AxisAlignment::Center);
     toggleMenu->setLayout(toggleLayout);
     toggleMenu->setPosition({0, 0});
 
     // helper to create a toggler with two visual states
     auto makeToggle = [this](const std::string& text) -> CCMenuItemToggler* {
-        auto offSpr = ButtonSprite::create(text.c_str(), 120, true, "goldFont.fnt", "GJ_button_01.png", 30.f, 1.f);
-        auto onSpr = ButtonSprite::create(text.c_str(), 120, true, "goldFont.fnt", "GJ_button_02.png", 30.f, 1.f);
+        auto offSpr = ButtonSprite::create(
+            text.c_str(), 120, true, "goldFont.fnt", "GJ_button_01.png", 30.f, 1.f);
+        auto onSpr = ButtonSprite::create(
+            text.c_str(), 120, true, "goldFont.fnt", "GJ_button_02.png", 30.f, 1.f);
         auto togg = CCMenuItemToggler::create(offSpr, onSpr, this, nullptr);
         return togg;
     };
@@ -88,7 +93,9 @@ bool RLReportPopup::init() {
     m_toggleMenu = toggleMenu;
 
     // reasons
-    m_reasonInput = TextInput::create(m_mainLayer->getScaledContentSize().width - 80.f, "Reasons/Additional Information", "chatFont.fnt");
+    m_reasonInput = TextInput::create(m_mainLayer->getScaledContentSize().width - 80.f,
+                                      "Reasons/Additional Information",
+                                      "chatFont.fnt");
     m_reasonInput->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, 70.f});
     m_reasonInput->setCommonFilter(CommonFilter::Any);
     m_reasonInput->setID("report-reason-input");
@@ -109,18 +116,22 @@ void RLReportPopup::onVanillaReport(CCObject* sender) {
     if (!glm->hasReportedLevel(self->m_levelId)) {
         createQuickPopup(
             "Report Level",
-            "Do you want to <cr>report</c> this level for breaking the <cg>upload guidelines</c> found in the editor? Vaild reasons include hateful, abusive, or otherwise inappropriate content as well as hacks, cheats or exploits.",
+            "Do you want to <cr>report</c> this level for breaking the <cg>upload guidelines</c> "
+            "found in the editor? Vaild reasons include hateful, abusive, or otherwise "
+            "inappropriate content as well as hacks, cheats or exploits.",
             "No",
             "Yes",
             [self](auto, bool yes) {
-                if (!yes) return;
-                GameLevelManager::get()->reportLevel(self->m_levelId);
-                log::debug("vanilla report: {}", self->m_levelId);
-                self->m_reportBtnSpr->setColor({75, 75, 75});
-                self->m_reportBtnBtn->setEnabled(false);
-            });
+            if (!yes) return;
+            GameLevelManager::get()->reportLevel(self->m_levelId);
+            log::debug("vanilla report: {}", self->m_levelId);
+            self->m_reportBtnSpr->setColor({75, 75, 75});
+            self->m_reportBtnBtn->setEnabled(false);
+        });
     } else {
-        Notification::create("You have already reported this level to RobTop.", NotificationIcon::Warning)->show();
+        Notification::create("You have already reported this level to RobTop.",
+                             NotificationIcon::Warning)
+            ->show();
     }
 }
 
@@ -145,148 +156,160 @@ void RLReportPopup::onSubmit(CCObject* sender) {
         return;
     }
 
-    createQuickPopup(
-        "Report Level",
-        "Are you sure you want to report this level?\n<cy>Layout moderators/admins will review your report and take appropriate action.</c>\n<cr>False reports will lead to your account being blacklisted from reporting layouts.</c>",
-        "Cancel",
-        "Report",
-        [this](auto, bool yes) {
-            if (!yes) return;
-            auto uploadPopup = UploadActionPopup::create(nullptr, "Sending Report...");
-            uploadPopup->show();
-            int accountId = GJAccountManager::get()->m_accountID;
-            auto argonToken = Mod::get()->getSavedValue<std::string>("argon_token");
-            if (argonToken.empty()) {
-                uploadPopup->showFailMessage("Argon Auth is missing/invalid");
+    createQuickPopup("Report Level",
+                     "Are you sure you want to report this level?\n<cy>Layout moderators/admins "
+                     "will review your report and take appropriate action.</c>\n<cr>False reports "
+                     "will lead to your account being blacklisted from reporting layouts.</c>",
+                     "Cancel",
+                     "Report",
+                     [this](auto, bool yes) {
+        if (!yes) return;
+        auto uploadPopup = UploadActionPopup::create(nullptr, "Sending Report...");
+        uploadPopup->show();
+        int accountId = GJAccountManager::get()->m_accountID;
+        auto argonToken = RLArgon::token();
+        if (argonToken.empty()) {
+            uploadPopup->showFailMessage("Argon Auth is missing/invalid");
+            return;
+        }
+
+        bool anyReason = false;
+        matjson::Value body = matjson::Value::object();
+        body["accountId"] = accountId;
+        body["argonToken"] = argonToken;
+        body["levelId"] = m_levelId;
+
+        if (m_plagiarismToggle && m_plagiarismToggle->isToggled()) {
+            body["plagiarism"] = true;
+            anyReason = true;
+        } else {
+            body["plagiarism"] = false;
+        }
+        if (m_secretWayToggle && m_secretWayToggle->isToggled()) {
+            body["secretWay"] = true;
+            anyReason = true;
+        } else {
+            body["secretWay"] = false;
+        }
+        if (m_lowEffortToggle && m_lowEffortToggle->isToggled()) {
+            body["lowEffort"] = true;
+            anyReason = true;
+        } else {
+            body["lowEffort"] = false;
+        }
+        if (m_unverifiedToggle && m_unverifiedToggle->isToggled()) {
+            body["unverified"] = true;
+            anyReason = true;
+        } else {
+            body["unverified"] = false;
+        }
+        if (m_nsfwContentToggle && m_nsfwContentToggle->isToggled()) {
+            body["nsfwContent"] = true;
+            anyReason = true;
+        } else {
+            body["nsfwContent"] = false;
+        }
+        if (m_misrateToggle && m_misrateToggle->isToggled()) {
+            body["misrate"] = true;
+            anyReason = true;
+        } else {
+            body["misrate"] = false;
+        }
+
+        if (m_decoratedToggle && m_decoratedToggle->isToggled()) {
+            body["decorated"] = true;
+            anyReason = true;
+        } else {
+            body["decorated"] = false;
+        }
+        if (m_otherToggle && m_otherToggle->isToggled()) {
+            body["other"] = true;
+            anyReason = true;
+        } else {
+            body["other"] = false;
+        }
+
+        if (m_reasonInput) {
+            auto reason = m_reasonInput->getString();
+            if (!reason.empty()) {
+                body["reason"] = std::string(reason);
+                anyReason = true;
+            }
+        }
+
+        if (!anyReason) {
+            uploadPopup->showFailMessage("No report reason provided");
+            return;
+        }
+
+        auto req = web::WebRequest();
+        req.bodyJSON(body);
+        Ref<RLReportPopup> self = this;
+        Ref<UploadActionPopup> popupRef = uploadPopup;
+        self->m_reportTask.spawn(req.post(std::string(rl::BASE_API_URL) + "/setReport"),
+                                 [self, popupRef](web::WebResponse res) {
+            if (!res.ok()) {
+                popupRef->showFailMessage(
+                    rl::getResponseFailMessage(res, "Failed to submit report"));
                 return;
             }
-
-            bool anyReason = false;
-            matjson::Value body = matjson::Value::object();
-            body["accountId"] = accountId;
-            body["argonToken"] = argonToken;
-            body["levelId"] = m_levelId;
-
-            if (m_plagiarismToggle && m_plagiarismToggle->isToggled()) {
-                body["plagiarism"] = true;
-                anyReason = true;
-            } else {
-                body["plagiarism"] = false;
+            auto j = res.json();
+            if (!j) {
+                popupRef->showFailMessage("Invalid server response");
+                return;
             }
-            if (m_secretWayToggle && m_secretWayToggle->isToggled()) {
-                body["secretWay"] = true;
-                anyReason = true;
-            } else {
-                body["secretWay"] = false;
-            }
-            if (m_lowEffortToggle && m_lowEffortToggle->isToggled()) {
-                body["lowEffort"] = true;
-                anyReason = true;
-            } else {
-                body["lowEffort"] = false;
-            }
-            if (m_unverifiedToggle && m_unverifiedToggle->isToggled()) {
-                body["unverified"] = true;
-                anyReason = true;
-            } else {
-                body["unverified"] = false;
-            }
-            if (m_nsfwContentToggle && m_nsfwContentToggle->isToggled()) {
-                body["nsfwContent"] = true;
-                anyReason = true;
-            } else {
-                body["nsfwContent"] = false;
-            }
-            if (m_misrateToggle && m_misrateToggle->isToggled()) {
-                body["misrate"] = true;
-                anyReason = true;
-            } else {
-                body["misrate"] = false;
-            }
-
-            if (m_decoratedToggle && m_decoratedToggle->isToggled()) {
-                body["decorated"] = true;
-                anyReason = true;
-            } else {
-                body["decorated"] = false;
-            }
-            if (m_otherToggle && m_otherToggle->isToggled()) {
-                body["other"] = true;
-                anyReason = true;
-            } else {
-                body["other"] = false;
-            }
-
-            if (m_reasonInput) {
-                auto reason = m_reasonInput->getString();
-                if (!reason.empty()) {
-                    body["reason"] = std::string(reason);
-                    anyReason = true;
+            auto json = j.unwrap();
+            bool success = json["success"].asBool().unwrapOrDefault();
+            if (success) {
+                popupRef->showSuccessMessage("Report submitted!");
+                self->removeFromParent();
+                // disable inputs
+                if (self->m_reasonInput) {
+                    self->m_reasonInput->setString("");
+                    self->m_reasonInput->setEnabled(false);
                 }
+                if (self->m_plagiarismToggle) self->m_plagiarismToggle->setEnabled(false);
+                if (self->m_secretWayToggle) self->m_secretWayToggle->setEnabled(false);
+                if (self->m_lowEffortToggle) self->m_lowEffortToggle->setEnabled(false);
+                if (self->m_unverifiedToggle) self->m_unverifiedToggle->setEnabled(false);
+                if (self->m_nsfwContentToggle) self->m_nsfwContentToggle->setEnabled(false);
+                if (self->m_misrateToggle) self->m_misrateToggle->setEnabled(false);
+                if (self->m_decoratedToggle) self->m_decoratedToggle->setEnabled(false);
+                if (self->m_otherToggle) self->m_otherToggle->setEnabled(false);
+            } else {
+                popupRef->showFailMessage("Failed to submit report");
             }
-
-            if (!anyReason) {
-                uploadPopup->showFailMessage("No report reason provided");
-                return;
-            }
-
-            auto req = web::WebRequest();
-            req.bodyJSON(body);
-            Ref<RLReportPopup> self = this;
-            Ref<UploadActionPopup> popupRef = uploadPopup;
-            self->m_reportTask.spawn(
-                req.post(std::string(rl::BASE_API_URL) + "/setReport"),
-                [self, popupRef](web::WebResponse res) {
-                    if (!self || !popupRef) return;
-                    if (!res.ok()) {
-                        popupRef->showFailMessage(rl::getResponseFailMessage(res, "Failed to submit report"));
-                        return;
-                    }
-                    auto j = res.json();
-                    if (!j) {
-                        popupRef->showFailMessage("Invalid server response");
-                        return;
-                    }
-                    auto json = j.unwrap();
-                    bool success = json["success"].asBool().unwrapOrDefault();
-                    if (success) {
-                        popupRef->showSuccessMessage("Report submitted!");
-                        self->removeFromParent();
-                        // disable inputs
-                        if (self->m_reasonInput) {
-                            self->m_reasonInput->setString("");
-                            self->m_reasonInput->setEnabled(false);
-                        }
-                        if (self->m_plagiarismToggle) self->m_plagiarismToggle->setEnabled(false);
-                        if (self->m_secretWayToggle) self->m_secretWayToggle->setEnabled(false);
-                        if (self->m_lowEffortToggle) self->m_lowEffortToggle->setEnabled(false);
-                        if (self->m_unverifiedToggle) self->m_unverifiedToggle->setEnabled(false);
-                        if (self->m_nsfwContentToggle) self->m_nsfwContentToggle->setEnabled(false);
-                        if (self->m_misrateToggle) self->m_misrateToggle->setEnabled(false);
-                        if (self->m_decoratedToggle) self->m_decoratedToggle->setEnabled(false);
-                        if (self->m_otherToggle) self->m_otherToggle->setEnabled(false);
-                    } else {
-                        popupRef->showFailMessage("Failed to submit report");
-                    }
-                });
         });
+    });
 }
 
 void RLReportPopup::onInfo(CCObject* sender) {
     MDPopup::create(
         "Reporting Rated Layouts",
-        "Use the toggles to select the reason(s) for <cr>reporting</c> this Rated Layout. You can select <cg>multiple reasons if applicable</c>.\n\n"
-        "To provide additional context, you can provide details in the <cy>'Reasons'</c> input field.\n\n"
-        "Once you submit the report, <cl>Layout Moderators</c> or <cr>Layout Admins</c> will review it and take <cg>appropriate action</c> based on our Rated Layouts guidelines.\n\n"
+        "Use the toggles to select the reason(s) for <cr>reporting</c> this Rated Layout. You can "
+        "select <cg>multiple reasons if applicable</c>.\n\n"
+        "To provide additional context, you can provide details in the <cy>'Reasons'</c> input "
+        "field.\n\n"
+        "Once you submit the report, <cl>Layout Moderators</c> or <cr>Layout Admins</c> will "
+        "review it and take <cg>appropriate action</c> based on our Rated Layouts guidelines.\n\n"
         "List of report reasons:\n"
-        "- <cy>**Plagiarism:**</c> The layout is either stolen or directly copied from a decorated or officially rated level *(e.g., removing the decorations from an existing level and claiming it as your own)*.\n"
-        "- <cg>**Secret Way:**</c> The layout contains secret ways or 'swag routes' that allow players to beat the level without actually playing through the intended path.\n"
-        "- <co>**Low Effort:**</c> The layout shows minimal effort or a lack of creativity regarding gameplay.\n"
-        "- <cl>**Unverified:**</c> The layout has not been beaten legitimately or has not been properly verified.\n"
-        "- <cr>**NSFW Content:**</c> The layout contains NSFW *(explicit/suggestive)*, sensitive *(political/religious/controversial)*, or harassing imagery and text.\n"
-        "- <cp>**Misrate:**</c> The level was rated incorrectly, such as having the wrong difficulty or rating category assigned.\n"
-        "- <cf>**Decorated:**</c> The layout has been heavily or partially decorated to the point where it is no longer a 'layout' and could potentially be officially rated in-game.\n"
-        "- <ca>**Other:**</c> The report reason does not fit into any of the above categories and requires additional context.",
+        "- <cy>**Plagiarism:**</c> The layout is either stolen or directly copied from a decorated "
+        "or officially rated level *(e.g., removing the decorations from an existing level and "
+        "claiming it as your own)*.\n"
+        "- <cg>**Secret Way:**</c> The layout contains secret ways or 'swag routes' that allow "
+        "players to beat the level without actually playing through the intended path.\n"
+        "- <co>**Low Effort:**</c> The layout shows minimal effort or a lack of creativity "
+        "regarding gameplay.\n"
+        "- <cl>**Unverified:**</c> The layout has not been beaten legitimately or has not been "
+        "properly verified.\n"
+        "- <cr>**NSFW Content:**</c> The layout contains NSFW *(explicit/suggestive)*, sensitive "
+        "*(political/religious/controversial)*, or harassing imagery and text.\n"
+        "- <cp>**Misrate:**</c> The level was rated incorrectly, such as having the wrong "
+        "difficulty or rating category assigned.\n"
+        "- <cf>**Decorated:**</c> The layout has been heavily or partially decorated to the point "
+        "where it is no longer a 'layout' and could potentially be officially rated in-game.\n"
+        "- <ca>**Other:**</c> The report reason does not fit into any of the above categories and "
+        "requires additional context.",
         "OK")
         ->show();
 }

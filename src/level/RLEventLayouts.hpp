@@ -48,10 +48,10 @@ private:
     EventType m_eventType = EventType::Daily;
     CCLayer* m_eventMenu = nullptr;
     bool m_setupFinished = false;
-    async::TaskHolder<web::WebResponse> m_eventTask;
-    async::TaskHolder<web::WebResponse> m_safeListTask;
+    async::TaskHolder<Result<matjson::Value>> m_eventTask;
+    //async::TaskHolder<web::WebResponse> m_safeListTask;
     ~RLEventLayouts() {
         m_eventTask.cancel();
-        m_safeListTask.cancel();
+        //m_safeListTask.cancel();
     }
 };

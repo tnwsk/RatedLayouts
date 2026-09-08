@@ -49,6 +49,7 @@ build-*/
 
 # ILY vscode
 **/.vscode
+*.old.*
 
 # Local History for Visual Studio Code
 .history/

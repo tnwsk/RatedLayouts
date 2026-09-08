@@ -3,6 +3,7 @@
 #include "RLModRatePayloadBuilder.hpp"
 #include "RLNetworkUtils.hpp"
 #include "RLConstants.hpp"
+#include "utils/RLArgon.hpp"
 #include "Geode/ui/Popup.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
@@ -81,7 +82,7 @@ static std::string getFeaturedName(int suggestFeatured) {
 }
 
 bool RLModRatePopup::ensureToken(std::string& token, UploadActionPopup* popup, const char* errorMessage) {
-    token = Mod::get()->getSavedValue<std::string>("argon_token");
+    token = RLArgon::token();
     if (token.empty()) {
         log::error("Failed to get user token");
         if (popup)
@@ -385,7 +386,7 @@ void RLModRatePopup::onInfoButton(CCObject* sender) {
     matjson::Value jsonBody = matjson::Value::object();
     jsonBody["accountId"] = GJAccountManager::get()->m_accountID;
     jsonBody["argonToken"] =
-        Mod::get()->getSavedValue<std::string>("argon_token");
+        RLArgon::token();
     jsonBody["levelId"] = m_levelId;
     jsonBody["targetAccountId"] = m_targetAccountId;
 
@@ -396,9 +397,7 @@ void RLModRatePopup::onInfoButton(CCObject* sender) {
     m_getModLevelTask.spawn(
         postReq.post(std::string(rl::BASE_API_URL) + "/getModLevel"),
         [self, sender](web::WebResponse response) {
-            if (!self)
-                return;
-            log::info("Received response from server");
+            log::trace("onInfoButton: Received response from server");
 
             if (!response.ok()) {
                 log::warn("Server returned non-ok status: {}", response.code());
@@ -825,7 +824,7 @@ void RLModRatePopup::onUnbanLevelButton(CCObject* sender) {
             log::info("Unbanning level - Level ID: {}", m_levelId);
 
             // Get argon token
-            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+            auto token = RLArgon::token();
             if (token.empty()) {
                 log::error("Failed to get user token");
                 popup->showFailMessage("Token not found!");
@@ -838,7 +837,7 @@ void RLModRatePopup::onUnbanLevelButton(CCObject* sender) {
             jsonBody["argonToken"] = token;
             jsonBody["levelId"] = m_levelId;
 
-            log::debug("Sending request: {}", jsonBody.dump());
+            log::trace("onUnbanLevelButton: Sending request: {}", jsonBody.dump());
 
             auto postReq = web::WebRequest();
             postReq.bodyJSON(jsonBody);
@@ -848,9 +847,7 @@ void RLModRatePopup::onUnbanLevelButton(CCObject* sender) {
             m_unbanLevelTask.spawn(
                 postReq.post(std::string(rl::BASE_API_URL) + "/setUnban"),
                 [self, popupRef](web::WebResponse response) {
-                    if (!self || !popupRef)
-                        return;
-                    log::info("Received response from server");
+                    log::trace("onUnbanLevelButton: Received response from server");
 
                     if (!response.ok()) {
                         log::warn("Server returned non-ok status: {}", response.code());
@@ -893,7 +890,7 @@ void RLModRatePopup::onLockLevelButton(CCObject* sender) {
             popup->show();
             log::info("Locking level - Level ID: {}", m_levelId);
 
-            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+            auto token = RLArgon::token();
             if (token.empty()) {
                 log::error("Failed to get user token");
                 popup->showFailMessage("Token not found!");
@@ -956,7 +953,7 @@ void RLModRatePopup::onUnlockLevelButton(CCObject* sender) {
             popup->show();
             log::info("Unlocking level - Level ID: {}", m_levelId);
 
-            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+            auto token = RLArgon::token();
             if (token.empty()) {
                 log::error("Failed to get user token");
                 popup->showFailMessage("Token not found!");
@@ -1023,7 +1020,7 @@ void RLModRatePopup::onBanLevelButton(CCObject* sender) {
             log::info("Banning level - Level ID: {}", m_levelId);
 
             // Get argon token
-            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+            auto token = RLArgon::token();
             if (token.empty()) {
                 log::error("Failed to get user token");
                 popup->showFailMessage("Token not found!");
@@ -1046,9 +1043,7 @@ void RLModRatePopup::onBanLevelButton(CCObject* sender) {
             m_banLevelTask.spawn(
                 postReq.post(std::string(rl::BASE_API_URL) + "/setBan"),
                 [self, popupRef](web::WebResponse response) {
-                    if (!self || !popupRef)
-                        return;
-                    log::info("Received response from server");
+                    log::trace("onBanLevelButton: Received response from server");
 
                     if (!response.ok()) {
                         log::warn("Server returned non-ok status: {}", response.code());
@@ -1093,7 +1088,7 @@ void RLModRatePopup::onDeleteSendsButton(CCObject* sender) {
             log::info("Deleting sends - Level ID: {}", m_levelId);
 
             // Get argon token
-            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+            auto token = RLArgon::token();
             if (token.empty()) {
                 log::error("Failed to get user token");
                 popup->showFailMessage("Token not found!");
@@ -1116,9 +1111,7 @@ void RLModRatePopup::onDeleteSendsButton(CCObject* sender) {
             m_deleteSendsTask.spawn(
                 postReq.post(std::string(rl::BASE_API_URL) + "/deleteSends"),
                 [self, popupRef](web::WebResponse response) {
-                    if (!self || !popupRef)
-                        return;
-                    log::info("Received response from server");
+                    log::trace("onDeleteSendsButton: Received response from server");
 
                     if (!response.ok()) {
                         log::warn("Server returned non-ok status: {}", response.code());
@@ -1152,7 +1145,7 @@ void RLModRatePopup::onUnsendButton(CCObject* sender) {
     popup->show();
     log::info("Unsending - Level ID: {}", m_levelId);
     // Get argon token
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     if (token.empty()) {
         log::error("Failed to get user token");
         popup->showFailMessage("Token not found!");
@@ -1171,9 +1164,7 @@ void RLModRatePopup::onUnsendButton(CCObject* sender) {
     m_unsendTask.spawn(
         postReq.post(std::string(rl::BASE_API_URL) + "/setUnsend"),
         [self, popupRef](web::WebResponse response) {
-            if (!self || !popupRef)
-                return;
-            log::info("Received response from server");
+            log::trace("onUnsendButton: Received response from server");
             if (!response.ok()) {
                 log::warn("Server returned non-ok status: {}", response.code());
                 popupRef->showFailMessage(
@@ -1222,9 +1213,7 @@ void RLModRatePopup::onRateButton(CCObject* sender) {
     m_setRateTask.spawn(
         postReq.post(std::string(rl::BASE_API_URL) + "/setRate"),
         [self, popupRef](web::WebResponse response) {
-            if (!self || !popupRef)
-                return;
-            log::info("Received response from server");
+            log::trace("onRateButton: Received response from server");
 
             if (!response.ok()) {
                 log::warn("Server returned non-ok status: {}", response.code());
@@ -1294,7 +1283,7 @@ void RLModRatePopup::onUnrateButton(CCObject* sender) {
             clearRejectState();
 
             // Get argon token
-            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+            auto token = RLArgon::token();
             if (token.empty()) {
                 log::error("Failed to get user token");
                 popup->showFailMessage("Token not found");
@@ -1324,9 +1313,7 @@ void RLModRatePopup::onUnrateButton(CCObject* sender) {
             m_setUnrateTask.spawn(
                 postReq.post(std::string(rl::BASE_API_URL) + "/setUnrate"),
                 [self, popupRef](web::WebResponse response) {
-                    if (!self || !popupRef)
-                        return;
-                    log::info("Received response from server");
+                    log::trace("onUnrateButton: Received response from server");
 
                     if (!response.ok()) {
                         log::warn("Server returned non-ok status: {}", response.code());
@@ -1457,9 +1444,7 @@ void RLModRatePopup::onSuggestButton(CCObject* sender) {
     m_setRateTask.spawn(
         postReq.post(std::string(rl::BASE_API_URL) + "/setSuggest"),
         [self, popupRef](web::WebResponse response) {
-            if (!self || !popupRef)
-                return;
-            log::info("Received response from server");
+            log::trace("onSuggestButton: Received response from server");
 
             if (!response.ok()) {
                 log::warn("Server returned non-ok status: {}", response.code());
@@ -1992,7 +1977,7 @@ void RLModRatePopup::onSetEventButton(CCObject* sender) {
     }
 
     // Get argon token
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     if (token.empty()) {
         log::error("Failed to get user token");
         Notification::create("Token not found", NotificationIcon::Error)->show();

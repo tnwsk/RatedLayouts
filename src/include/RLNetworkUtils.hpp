@@ -1,7 +1,9 @@
 #pragma once
 
-#include <Geode/Geode.hpp>
+#include <Geode/Geode.hpp>  // TODO: Remove
 #include <argon/argon.hpp>
+#include <Geode/Result.hpp>
+#include <arc/future/Future.hpp>
 #include <cstdint>
 #include <ctime>
 #include <filesystem>
@@ -9,7 +11,7 @@
 #include <string_view>
 #include "RLConfig.hpp"
 #include "RLConstants.hpp"
-#include "utils/CachedSettings.hpp"
+#include "utils/TimedCacheEntry.hpp"
 
 using namespace geode::prelude;
 
@@ -36,70 +38,87 @@ inline web::WebRequest createWebRequest(matjson::Value const& json) {
 inline std::string getResponseFailMessage(web::WebResponse const& response,
                                           std::string const& fallback) {
     auto message = response.string().unwrapOrDefault();
-    if (!message.empty())
-        return message;
+    if (!message.empty()) return message;
     return fallback;
+}
+
+struct ExpiredToken {
+    enum Kind {
+        NONE = 0,
+        ARGON = 1,
+        SESSION = 2,
+        REFRESH = 2,
+    };
+};
+
+// Checks if the response indicates a value is expired.
+inline ExpiredToken::Kind getExpiredTokenKind(web::WebResponse const& response) {
+    if (response.code() != 401) return ExpiredToken::NONE;
+    if (auto header = response.header("Www-Authenticate")) {
+        std::string_view auth = *header;
+        if (auth == "Argon")
+            return ExpiredToken::ARGON;
+        else if (auth == "Session")
+            return ExpiredToken::SESSION;
+        else if (auth == "Refresh")
+            return ExpiredToken::REFRESH;
+    }
+    return ExpiredToken::NONE;
 }
 
 std::string_view getBaseURL();
 
-inline bool isGDPS() {
-    return getBaseURL() != "https://www.boomlings.com/database";
-}
+inline bool isGDPS() { return getBaseURL() != "https://www.boomlings.com/database"; }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Caches
 
 // TODO: Tbh this whole setup is clunky, refactor it all
 
-using RequestTimestamp = std::int64_t;
+using RequestTimestamp = RLTimestamp;
+using RequestCacheEntry = TimedCacheEntry<matjson::Value>;
 
-inline RequestTimestamp getCurrentTimestamp() {
-    // TODO: Look into using alternative to std::time
-    return static_cast<RequestTimestamp>(std::time(nullptr));
+inline std::filesystem::path getRLSaveDir() {
+    return dirs::getModsSaveDir() / Mod::get()->getID();
 }
 
 inline std::filesystem::path getRequestCachePath() {
-    return dirs::getModsSaveDir() / Mod::get()->getID() / "request_cache.json";
+    return rl::getRLSaveDir() / "request_cache.json";
 }
 
 inline std::filesystem::path getNameplateCacheDir() {
-    return dirs::getModsSaveDir() / Mod::get()->getID() / "nameplates";
+    return rl::getRLSaveDir() / "nameplates";
 }
 
-inline std::filesystem::path getNameplateCachePath(int nameplateId) {
-    return getNameplateCacheDir() / fmt::format("nameplate_{}.png", nameplateId);
+inline std::filesystem::path getIconsCacheDir() {
+    return rl::getRLSaveDir() / "icons";
 }
 
-inline std::int64_t getRequestCacheLifetimeSeconds() {
-    if (!Mod::get()) return 360;
-    return CachedSettings::get()->requestCacheLifetime;
+/// Defined in `utils/LazyNameplate.cpp`.
+std::filesystem::path getNameplateCachePath(int nameplateId);
+/// Defined in `utils/LazyNameplate.cpp`.
+std::filesystem::path getIconsCachePath(std::string const& url);
+
+int64_t getRequestCacheLifetimeSeconds();
+inline Expires getRequestCacheExpires() {
+    return rl::make_expires(getRequestCacheLifetimeSeconds());
+}
+inline asp::Duration getRequestCacheExpiresDuration() {
+    return asp::Duration::fromSecs(getRequestCacheLifetimeSeconds());
+}
+int getRequestCacheMaxItems();
+
+inline RequestCacheEntry makeRequestCacheEntry(matjson::Value const& val) {
+    return RequestCacheEntry(getRequestCacheExpires(), val);
+}
+inline RequestCacheEntry makeRequestCacheEntry(matjson::Value&& val) {
+    return RequestCacheEntry(getRequestCacheExpires(), std::move(val));
 }
 
-inline int getRequestCacheMaxItems() {
-    if (!Mod::get()) return 128;
-    return CachedSettings::get()->requestCacheMaxItems;
+RL_ALWAYS_INLINE bool isRequestCacheValid(RequestTimestamp timestamp, int64_t lifetime) {
+    return (rl::getCurrentTimestamp() - timestamp) < lifetime;
 }
-
-RL_ALWAYS_INLINE bool isRequestCacheValid(RequestTimestamp timestamp, std::int64_t lifetime) {
-    return (getCurrentTimestamp() - timestamp) < lifetime;
-}
-
-inline bool isRequestCacheValid(RequestTimestamp timestamp) {
-    std::int64_t lifetime = getRequestCacheLifetimeSeconds();
-    if (lifetime <= 0) return false;
-    return isRequestCacheValid(timestamp, lifetime);
-}
-
-struct RequestCacheEntry {
-    matjson::Value json;
-    RequestTimestamp timestamp = 0;
-
-public:
-    bool isValid() const {
-        return isRequestCacheValid(timestamp);
-    }
-};
+bool isRequestCacheValid(RequestTimestamp timestamp);
 
 /// Checks if either cache is in use, and the cache path is valid.
 bool requestCacheExists();
@@ -112,11 +131,15 @@ matjson::Value* loadRequestCacheRootLockfree();
 bool saveNameplateCache(int nameplateId, std::string const& data);
 bool hasNameplateCache(int nameplateId);
 
+bool saveIconsCache(std::string const& url, std::string const& data);
+bool hasIconsCache(std::string const& url);
+
 std::optional<RequestCacheEntry> loadRequestCacheEntry(std::string_view section, int id);
 void storeRequestCacheEntry(std::string_view section, int id, matjson::Value const& data);
 void removeRequestCacheEntry(std::string_view section, int id);
 
 void clearNameplateCache();
+void clearIconsCache();
 void clearRequestCache();
 
 std::optional<matjson::Value> getCachedCommentRole(int accountId);
@@ -128,18 +151,3 @@ std::optional<matjson::Value> getStaleLevelRating(int levelId);
 void setCachedLevelRating(int levelId, matjson::Value const& data);
 void removeCachedLevelRating(int levelId);
 }  // namespace rl
-
-template <>
-struct matjson::Serialize<rl::RequestCacheEntry> {
-    static geode::Result<rl::RequestCacheEntry> fromJson(const matjson::Value& value) {
-        GEODE_UNWRAP_INTO(matjson::Value data, value.get("data"));
-        if (!data.isObject()) [[unlikely]]
-            return geode::Err("data is not an object!");
-        GEODE_UNWRAP_INTO(rl::RequestTimestamp time, value["timestamp"].asInt());
-        return geode::Ok(rl::RequestCacheEntry{std::move(data), time});
-    }
-    static matjson::Value toJson(const rl::RequestCacheEntry& entry) {
-        return matjson::makeObject({{"data", entry.json},
-                                    {"timestamp", entry.timestamp}});
-    }
-};

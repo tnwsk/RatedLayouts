@@ -1,5 +1,6 @@
 #include "popup/RLAdminNameplatePopup.hpp"
 #include "RLConstants.hpp"
+#include "utils/RLArgon.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include <Geode/binding/UploadActionPopup.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
@@ -7,7 +8,7 @@
 #include <Geode/binding/ProfilePage.hpp>
 
 using namespace geode::prelude;
-//using namespace rl;
+using namespace rl;
 
 RLAdminNameplatePopup* RLAdminNameplatePopup::create() {
     auto ret = new RLAdminNameplatePopup();
@@ -54,7 +55,7 @@ void RLAdminNameplatePopup::fetchPending() {
     }
     m_loadingCircle->setVisible(true);
 
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     if (token.empty()) {
         Notification::create("Argon token missing!", NotificationIcon::Warning)->show();
         return;
@@ -67,10 +68,11 @@ void RLAdminNameplatePopup::fetchPending() {
     auto req = geode::utils::web::WebRequest();
     Ref<RLAdminNameplatePopup> self = this;
 
+    // TODO: Cache requests here...
     m_fetchTask.spawn(
+        //LocalEndpoint
         req.bodyJSON(body).post(std::string(rl::BASE_API_URL) + "/getPendingNameplates"),
         [self](geode::utils::web::WebResponse response) {
-            if (!self) return;
             if (self->m_loadingCircle) self->m_loadingCircle->setVisible(false);
             if (!response.ok()) {
                 Notification::create("Failed to fetch pending nameplates", NotificationIcon::Error)->show();
@@ -107,14 +109,15 @@ void RLAdminNameplatePopup::fetchPending() {
                 auto cell = CCLayer::create();
                 cell->setContentSize({400.f, 40.f});
 
-                auto bg = LazySprite::create({400.f, 40.f}, false);
+                // TODO: Cache these?
+                auto* bg = LazySprite::create({400.f, 40.f}, false);
                 bg->setPosition(cell->getContentSize() / 2);
                 bg->setZOrder(-1);
                 bg->setAutoResize(true);
                 bg->loadFromUrl(std::string(rl::BASE_API_URL) + "/" + item.path, CCImage::kFmtPng, true);
                 cell->addChild(bg);
 
-                auto nameLabel = CCLabelBMFont::create(fmt::format("{}", item.username).c_str(), "goldFont.fnt");
+                auto nameLabel = CCLabelBMFont::create(item.username.c_str(), "goldFont.fnt");
                 nameLabel->limitLabelWidth(250.f, 0.5f, 0.15f);
 
                 auto menu = CCMenu::create();
@@ -187,7 +190,7 @@ void RLAdminNameplatePopup::onApprove(CCObject* sender) {
     if (idx < 0 || idx >= m_items.size()) return;
     auto item = m_items[idx];
 
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     matjson::Value body = matjson::Value::object();
     body["accountId"] = GJAccountManager::get()->m_accountID;
     body["argonToken"] = token;
@@ -218,7 +221,7 @@ void RLAdminNameplatePopup::onReject(CCObject* sender) {
     if (idx < 0 || idx >= m_items.size()) return;
     auto item = m_items[idx];
 
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     matjson::Value body = matjson::Value::object();
     body["accountId"] = GJAccountManager::get()->m_accountID;
     body["argonToken"] = token;

@@ -2,11 +2,11 @@
 #include "RLConstants.hpp"
 #include "RLNetworkUtils.hpp"
 #include "Geode/ui/Popup.hpp"
-
+#include "utils/RLArgon.hpp"
 #include <Geode/Geode.hpp>
-#include <argon/argon.hpp>
 
 using namespace geode::prelude;
+using namespace rl;
 
 const int buttonWidth = 250.f;
 
@@ -338,8 +338,7 @@ bool RLUserControl::init() {
         return true;
     
     matjson::Value jsonBody = matjson::Value::object();
-    jsonBody["argonToken"] =
-        Mod::get()->getSavedValue<std::string>("argon_token");
+    jsonBody["argonToken"] = RLArgon::token();
     jsonBody["accountId"] = m_targetAccountId;
 
     auto postReq = web::WebRequest();
@@ -348,7 +347,6 @@ bool RLUserControl::init() {
     m_profileTask.spawn(
         postReq.post(std::string(rl::BASE_API_URL) + "/profile"),
         [self](web::WebResponse response) {
-            if (!self) return;
             if (!response.ok()) {
                 log::warn("Profile fetch returned non-ok status: {}",
                     response.code());
@@ -515,7 +513,7 @@ void RLUserControl::onWipeAction(CCObject* sender) {
         Ref<UploadActionPopup> popupRef = popup;
 
         // Get token
-        auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+        auto token = RLArgon::token();
         if (token.empty()) {
             popupRef->showFailMessage("Authentication token not found");
             return;
@@ -541,9 +539,6 @@ void RLUserControl::onWipeAction(CCObject* sender) {
         self->m_deleteUserTask.spawn(
             postReq.post(std::string(rl::BASE_API_URL) + "/deleteUser"),
         [self, popupRef](web::WebResponse response) {
-            if (!self || !popupRef)
-                return;
-
             // re-enable UI
             self->setAllOptionsEnabled(true);
             if (self->m_wipeButton)
@@ -684,7 +679,7 @@ void RLUserControl::onPromoteAction(CCObject* sender) {
             Ref<UploadActionPopup> popupRef = popup;
 
             // Get token
-            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+            auto token = RLArgon::token();
             if (token.empty()) {
                 popupRef->showFailMessage("Authentication token not found");
                 return;
@@ -746,9 +741,6 @@ void RLUserControl::onPromoteAction(CCObject* sender) {
             self->m_promoteUserTask.spawn(
                 postReq.post(std::string(rl::BASE_API_URL) + "/promoteUser"),
                 [=](web::WebResponse response) {
-                    if (!self || !popupRef)
-                        return;
-
                     // re-enable UI
                     self->setAllOptionsEnabled(true);
                     auto enableBtnIf = [&](CCMenuItemSpriteExtra* btn, const char* text, bool cond) {
@@ -1121,7 +1113,7 @@ void RLUserControl::applySingleOption(const std::string& key, bool value) {
     Ref<UploadActionPopup> popupRef = popup;
 
     // get token
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     if (token.empty()) {
         popupRef->showFailMessage("Authentication token not found");
         // revert visual to persisted
@@ -1148,8 +1140,6 @@ void RLUserControl::applySingleOption(const std::string& key, bool value) {
     m_setUserTask.spawn(
         postReq.post(std::string(rl::BASE_API_URL) + "/setUser"),
         [self, key, value, popupRef](web::WebResponse response) {
-            if (!self || !popupRef)
-                return;
             // re-enable buttons
             self->setOptionEnabled(key, true);
 

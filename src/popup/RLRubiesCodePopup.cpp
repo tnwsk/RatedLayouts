@@ -1,6 +1,7 @@
 #include "popup/RLRubiesCodePopup.hpp"
 #include "popup/RLAddCodePopup.hpp"
 #include "RLConstants.hpp"
+#include "utils/RLArgon.hpp"
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/UploadActionPopup.hpp>
 #include <cue/ListNode.hpp>
@@ -8,6 +9,7 @@
 
 using namespace geode::prelude;
 using namespace cue;
+using namespace rl;
 
 RLRubiesCodePopup* RLRubiesCodePopup::create() {
     auto popup = new RLRubiesCodePopup();
@@ -87,7 +89,7 @@ void RLRubiesCodePopup::fetchCodes() {
     loadingSpinner->setPosition(m_listNode->getContentSize() / 2.f);
     m_listNode->addChild(loadingSpinner);
 
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     auto accountId = GJAccountManager::get()->m_accountID;
     if (token.empty()) {
         Notification::create("Argon token missing", NotificationIcon::Error)->show();
@@ -103,8 +105,6 @@ void RLRubiesCodePopup::fetchCodes() {
     Ref<RLRubiesCodePopup> self = this;
     m_fetchTask.spawn(web::WebRequest().bodyJSON(body).post(std::string(rl::BASE_API_URL) + "/getRubiesCode"),
         [self, loadingSpinner](web::WebResponse response) {
-            if (!self)
-                return;
             if (!response.ok()) {
                 Notification::create("Failed to fetch rubies codes", NotificationIcon::Error)->show();
                 log::warn("getRubiesCode request failed {}", response.code());
@@ -277,7 +277,7 @@ void RLRubiesCodePopup::onDeleteCode(CCObject* sender) {
             UploadActionPopup* upopup = UploadActionPopup::create(nullptr, "Deleting code...");
             upopup->show();
 
-            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+            auto token = RLArgon::token();
             if (token.empty()) {
                 upopup->showFailMessage("Argon token missing");
                 return;

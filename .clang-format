@@ -3,6 +3,7 @@
 BasedOnStyle: Google
 #NamespaceIndentation: All
 NamespaceIndentation: None
+LambdaBodyIndentation: OuterScope
 CommentPragmas: "^"
 FixNamespaceComments: true
 SortIncludes: false
@@ -19,8 +20,9 @@ AllowShortIfStatementsOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
 
 IndentWidth: 4
-ColumnLimit: 0
+ColumnLimit: 100
 AccessModifierOffset: -4
+IndentCaseLabels: false
 
 AlignAfterOpenBracket: Align
 #AlignAfterOpenBracket: DontAlign

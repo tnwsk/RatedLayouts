@@ -1,17 +1,18 @@
 #include "layer/RLLevelBrowserLayer.hpp"
-
+#include <algorithm>
+#include <charconv>
+#include <string>
 #include <Geode/binding/GameLevelManager.hpp>
 #include <Geode/binding/UploadActionPopup.hpp>
 #include <Geode/modify/GameLevelManager.hpp>
 #include <Geode/modify/LevelInfoLayer.hpp>
-#include <algorithm>
-#include <charconv>
-
+#include <cue/RepeatingBackground.hpp>
+#include <fmt/ranges.h>
 #include "RLLayerBackground.hpp"
 #include "RLConstants.hpp"
 #include "utils/CachedSettings.hpp"
-#include <cue/RepeatingBackground.hpp>
-#include <string>
+#include "utils/RLArgon.hpp"
+#include "utils/RLData.hpp"
 
 using namespace geode::prelude;
 using namespace rl;
@@ -19,14 +20,16 @@ using namespace rl;
 static constexpr CCSize LIST_SIZE{356.f, 220.f};
 static constexpr int PER_PAGE = 10;
 
+// TODO: Fix cases where levels may be stale server side
+
 RLLevelBrowserLayer* RLLevelBrowserLayer::create(Mode mode,
-    ParamList const& params,
-    std::string const& title) {
+                                                 ParamList const& params,
+                                                 std::string const& title) {
     auto ret = new RLLevelBrowserLayer();
     ret->m_mode = mode;
     ret->m_modeParams = params;
     ret->m_title = title;
-    if (ret && ret->init(nullptr)) {
+    if (ret->init(nullptr)) {
         ret->autorelease();
         return ret;
     }
@@ -34,293 +37,22 @@ RLLevelBrowserLayer* RLLevelBrowserLayer::create(Mode mode,
     return nullptr;
 }
 
-void RLLevelBrowserLayer::setupBackground() {
-    rl::addLayerBackground(this);
-}
-
-int RLLevelBrowserLayer::computeModeType() const {
-    if (m_mode == Mode::Featured)
-        return 2;
-    if (m_mode == Mode::AdminSent)
-        return 4;
-    if (m_mode == Mode::LegendarySends)
-        return 5;
-    if (m_mode == Mode::Sent)
-        return 1;
-    return 0;
-}
-
-int RLLevelBrowserLayer::parseModeParam(int fallback) const {
-    if (m_modeParams.empty())
-        return fallback;
-    auto& val = m_modeParams.front().second;
-    int parsed = 0;
-    auto res = std::from_chars(val.data(), val.data() + val.size(), parsed);
-    if (res.ec == std::errc())
-        return parsed;
-    return fallback;
-}
-
-void RLLevelBrowserLayer::updatePagingFromJson(matjson::Value const& json) {
-    if (json.contains("page")) {
-        if (auto p = json["page"].as<int>(); p) {
-            int srvPage = p.unwrap();
-            m_page = std::max(0, srvPage - 1);
-        }
-    }
-
-    if (json.contains("total")) {
-        if (auto tp = json["total"].as<int>(); tp) {
-            m_totalLevels = tp.unwrap();
-            m_totalPages = (m_totalLevels + PER_PAGE - 1) / PER_PAGE;
-        }
-    }
-
-    if (m_totalPages < 1)
-        m_totalPages = 1;
-
-    if (m_page < 0)
-        m_page = 0;
-    if (m_page >= m_totalPages)
-        m_page = (m_totalPages > 0) ? (m_totalPages - 1) : 0;
-
-    this->updatePageButton();
-}
-
-std::string RLLevelBrowserLayer::extractLevelIDs(matjson::Value const& json) const {
-    std::string levelIDs;
-    bool first = true;
-
-    auto appendID = [&](int id) {
-        if (!first)
-            levelIDs += ",";
-        levelIDs += numToString(id);
-        first = false;
-    };
-
-    if (json.contains("levels")) {
-        auto arr = json["levels"];
-        for (auto v : arr) {
-            if (auto id = v.as<int>(); id) {
-                appendID(id.unwrap());
-            }
-        }
-        return levelIDs;
-    }
-
-    if (json.contains("levelIds")) {
-        auto arr = json["levelIds"];
-        for (auto v : arr) {
-            if (auto id = v.as<int>(); id) {
-                appendID(id.unwrap());
-            }
-        }
-        return levelIDs;
-    }
-
-    if (json.type() == matjson::Type::Array) {
-        for (auto v : json) {
-            if (auto id = v.as<int>(); id) {
-                appendID(id.unwrap());
-            }
-        }
-    }
-
-    return levelIDs;
-}
-
-void RLLevelBrowserLayer::processFetchedLevelIDs(std::string const& levelIDs, std::string const& emptyMessage) {
-    if (!levelIDs.empty()) {
-        m_searchObject = GJSearchObject::create(SearchType::Type19, levelIDs.c_str());
-        auto glm = GameLevelManager::get();
-        if (glm) {
-            glm->m_levelManagerDelegate = this;
-            glm->getOnlineLevels(m_searchObject);
-        } else {
-            this->stopLoading();
-        }
-    } else {
-        Notification::create(emptyMessage, NotificationIcon::Warning)->show();
-        this->stopLoading();
-    }
-}
-
-void RLLevelBrowserLayer::applyModeFetch(bool force) {
-    if (m_mode == Mode::Featured || m_mode == Mode::Sent ||
-        m_mode == Mode::AdminSent || m_mode == Mode::LegendarySends) {
-        if (force)
-            m_page = 0;
-        int type = parseModeParam(computeModeType());
-        this->fetchLevelsForType(type);
-    } else if (m_mode == Mode::Account) {
-        if (force)
-            m_page = 0;
-        int accountId = parseModeParam(GJAccountManager::get()->m_accountID);
-        this->fetchAccountLevels(accountId);
-    } else if (m_mode == Mode::Search || m_mode == Mode::EventSafe) {
-        if (!m_modeParams.empty())
-            this->performSearchQuery(m_modeParams);
-    }
-}
-
-void RLLevelBrowserLayer::setupControls() {
-    auto winSize = CCDirector::sharedDirector()->getWinSize();
-    const char* title = m_title.empty() ? "Rated Layouts" : m_title.c_str();
-
-    auto uiMenu = CCMenu::create();
-    uiMenu->setPosition({0, 0});
-
-    addBackButton(this, BackButtonStyle::Pink);
-
-    auto infoSpr = CCSprite::createWithSpriteFrameName("RL_info01.png"_spr);
-    infoSpr->setScale(0.7f);
-    auto infoButton = CCMenuItemSpriteExtra::create(
-        infoSpr, this, menu_selector(RLLevelBrowserLayer::onInfoButton));
-    infoButton->setPosition({25, 25});
-    uiMenu->addChild(infoButton);
-
-    // compact mode toggle button (bottom-left)
-    auto compactSpr =
-        CCSprite::createWithSpriteFrameName("GJ_smallModeIcon_001.png");
-    if (compactSpr) {
-        m_compactToggleBtn = CCMenuItemSpriteExtra::create(
-            compactSpr, this, menu_selector(RLLevelBrowserLayer::onCompactToggle));
-        if (m_compactToggleBtn) {
-            m_compactToggleBtn->setPosition(
-                {infoButton->getPositionX(), infoButton->getPositionY() + 40});
-            uiMenu->addChild(m_compactToggleBtn);
-
-            m_compactMode = Mod::get()->getSavedValue<bool>("compact_mode", false);
-            m_compactToggleBtn->setOpacity(m_compactMode ? 255 : 180);
-        }
-    }
-
-    this->addChild(uiMenu, 10);
-
-    m_listNode = cue::ListNode::create({LIST_SIZE.width, LIST_SIZE.height}, {191, 114, 62, 255}, cue::ListBorderStyle::Levels);
-    m_listNode->setAnchorPoint({0.5f, 0.5f});
-    m_listNode->setPosition(winSize.width / 2 - 5.f, winSize.height / 2 - 5.f);
-    this->addChild(m_listNode, 5);
-    m_scrollLayer = m_listNode->getScrollLayer();
-
-    m_titleLabel = CCLabelBMFont::create(m_title.c_str(), "bigFont.fnt");
-    if (m_titleLabel) {
-        m_titleLabel->setAnchorPoint({0.5f, 0.5f});
-        m_titleLabel->setPosition({LIST_SIZE.width / 2.f, LIST_SIZE.height + 18.f});
-        m_titleLabel->limitLabelWidth(LIST_SIZE.width - 30.f, .8f, 0.5f);
-        m_listNode->addChild(m_titleLabel, 1);
-    }
-
-    if (!CachedSettings::get()->disableScrollbar) {
-        auto scrollBar = Scrollbar::create(m_scrollLayer);
-        scrollBar->setPosition({LIST_SIZE.width + 24.f, LIST_SIZE.height / 2});
-        scrollBar->setContentHeight(LIST_SIZE.height - 20);
-        m_listNode->addChild(scrollBar, 10);
-    }
-
-    auto contentLayer = m_scrollLayer->m_contentLayer;
-    if (contentLayer) {
-        auto layout = ColumnLayout::create();
-        contentLayer->setLayout(layout);
-        layout->setGap(0.f);
-        layout->setAutoGrowAxis(220.f);
-        layout->setAxisReverse(true);
-        layout->setAxisAlignment(AxisAlignment::End);
-        auto spinner = LoadingSpinner::create(64.f);
-        if (spinner) {
-            spinner->setID("rl-spinner");
-            auto win = CCDirector::sharedDirector()->getWinSize();
-            spinner->setPosition(win / 2);
-            this->addChild(spinner, 1000);
-            m_circle = spinner;
-        }
-    }
-}
-
 bool RLLevelBrowserLayer::init(GJSearchObject* object) {
-    if (!CCLayer::init())
-        return false;
+    if (!CCLayer::init()) return false;
 
     m_searchObject = object;
     if (GameLevelManager::get()->m_levelManagerDelegate)
-        GameLevelManager::get()->m_levelManagerDelegate = nullptr;  // clear any existing delegate to avoid callbacks to deleted layers
-
-    setupBackground();
+        GameLevelManager::get()->m_levelManagerDelegate =
+            nullptr;  // clear any existing delegate to avoid callbacks to deleted layers
 
     auto winSize = CCDirector::sharedDirector()->getWinSize();
-    const char* title = m_title.empty() ? "Rated Layouts" : m_title.c_str();
+    auto* uiMenu = CCMenu::create();
 
-    auto uiMenu = CCMenu::create();
-    uiMenu->setPosition({0, 0});
+    setupBackground();
+    setupControls(uiMenu);
 
-    addBackButton(this, BackButtonStyle::Pink);
-
-    auto infoSpr = CCSprite::createWithSpriteFrameName("RL_info01.png"_spr);
-    infoSpr->setScale(0.7f);
-    auto infoButton = CCMenuItemSpriteExtra::create(
-        infoSpr, this, menu_selector(RLLevelBrowserLayer::onInfoButton));
-    infoButton->setPosition({25, 25});
-    uiMenu->addChild(infoButton);
-
-    // compact mode toggle button (bottom-left)
-    auto compactSpr =
-        CCSprite::createWithSpriteFrameName("GJ_smallModeIcon_001.png");
-    if (compactSpr) {
-        m_compactToggleBtn = CCMenuItemSpriteExtra::create(
-            compactSpr, this, menu_selector(RLLevelBrowserLayer::onCompactToggle));
-        if (m_compactToggleBtn) {
-            m_compactToggleBtn->setPosition(
-                {infoButton->getPositionX(), infoButton->getPositionY() + 40});
-            uiMenu->addChild(m_compactToggleBtn);
-
-            m_compactMode = Mod::get()->getSavedValue<bool>("compact_mode", false);
-            m_compactToggleBtn->setOpacity(m_compactMode ? 255 : 180);
-        }
-    }
-
-    m_listNode = cue::ListNode::create({LIST_SIZE.width, LIST_SIZE.height}, {191, 114, 62, 255}, cue::ListBorderStyle::Levels);
-    m_listNode->setAnchorPoint({0.5f, 0.5f});
-    m_listNode->setPosition(winSize.width / 2 - 5.f, winSize.height / 2 - 5.f);
-    this->addChild(m_listNode, 5);
-    m_scrollLayer = m_listNode->getScrollLayer();
-
-    m_titleLabel = CCLabelBMFont::create(m_title.c_str(), "bigFont.fnt");
-    if (m_titleLabel) {
-        m_titleLabel->setAnchorPoint({0.5f, 0.5f});
-        m_titleLabel->setPosition({LIST_SIZE.width / 2.f, LIST_SIZE.height + 19.f});
-        m_titleLabel->limitLabelWidth(LIST_SIZE.width - 40.f, .8f, 0.5f);
-        m_listNode->addChild(m_titleLabel, 1);
-    }
-
-    if (!CachedSettings::get()->disableScrollbar) {
-        auto scrollBar = Scrollbar::create(m_scrollLayer);
-        scrollBar->setPosition({LIST_SIZE.width + 24.f, LIST_SIZE.height / 2});
-        scrollBar->setContentHeight(LIST_SIZE.height - 20);
-        m_listNode->addChild(scrollBar, 10);
-    }
-
-    auto contentLayer = m_scrollLayer ? m_scrollLayer->m_contentLayer : nullptr;
-    if (contentLayer) {
-        auto layout = ColumnLayout::create();
-        contentLayer->setLayout(layout);
-        layout->setGap(0.f);
-        layout->setAutoGrowAxis(220.f);
-        layout->setAxisReverse(true);
-        layout->setAxisAlignment(AxisAlignment::End);
-        auto spinner = LoadingSpinner::create(64.f);
-        if (spinner) {
-            spinner->setID("rl-spinner");
-            auto win = CCDirector::sharedDirector()->getWinSize();
-            spinner->setPosition(win / 2);
-            this->addChild(spinner, 1000);
-            m_circle = spinner;
-        }
-    }
-
-    this->addChild(uiMenu, 10);
-
-    auto pageBtnSpr = CCSprite::createWithSpriteFrameName(
-        "geode.loader/baseEditor_Normal_Cyan.png");
+    auto* pageBtnSpr =
+        CCSprite::createWithSpriteFrameName("geode.loader/baseEditor_Normal_Cyan.png");
     if (pageBtnSpr) {
         m_pageButton = CCMenuItemSpriteExtra::create(
             pageBtnSpr, this, menu_selector(RLLevelBrowserLayer::onPageButton));
@@ -331,12 +63,12 @@ bool RLLevelBrowserLayer::init(GJSearchObject* object) {
             pageMenu->setPosition({winSize.width - 7, winSize.height - 80});
             pageMenu->setAnchorPoint({1.f, 0.5f});
             pageMenu->setLayout(ColumnLayout::create()
-                    ->setGap(5.f)
-                    ->setAutoScale(true)
-                    ->setGrowCrossAxis(true)
-                    ->setCrossAxisOverflow(true)
-                    ->setAxisReverse(true)
-                    ->setAxisAlignment(AxisAlignment::End));
+                                    ->setGap(5.f)
+                                    ->setAutoScale(true)
+                                    ->setGrowCrossAxis(true)
+                                    ->setCrossAxisOverflow(true)
+                                    ->setAxisReverse(true)
+                                    ->setAxisAlignment(AxisAlignment::End));
             pageMenu->addChild(m_pageButton);
             this->addChild(pageMenu, 10);
             pageMenu->updateLayout();
@@ -349,23 +81,20 @@ bool RLLevelBrowserLayer::init(GJSearchObject* object) {
                 m_pageButtonLabel->setAnchorPoint({0.5f, 0.5f});
                 m_pageButtonLabel->setID("rl-page-label");
                 m_pageButtonLabel->setScale(0.7f);
-                m_pageButtonLabel->limitLabelWidth(m_pageButton->getContentSize().width - 10.f,
-                    .7f,
-                    .1f);
+                m_pageButtonLabel->limitLabelWidth(
+                    m_pageButton->getContentSize().width - 10.f, .7f, .1f);
                 m_pageButton->addChild(m_pageButtonLabel, 1);
             }
 
             m_levelsLabel = CCLabelBMFont::create("", "goldFont.fnt");
-            m_levelsLabel->setPosition(
-                {pageMenu->getPositionX(), pageMenu->getPositionY() + 75});
+            m_levelsLabel->setPosition({pageMenu->getPositionX(), pageMenu->getPositionY() + 75});
             m_levelsLabel->setAnchorPoint({1.f, 1.f});
             m_levelsLabel->setScale(0.45f);
             this->addChild(m_levelsLabel, 10);
 
             if (m_mode == Mode::Sent || m_mode == Mode::AdminSent ||
                 m_mode == Mode::LegendarySends) {
-                auto classicIcon =
-                    CCSprite::createWithSpriteFrameName("RL_starBig.png"_spr);
+                auto classicIcon = CCSprite::createWithSpriteFrameName("RL_starBig.png"_spr);
                 auto classicOffSpr = EditorButtonSprite::create(
                     classicIcon, EditorBaseColor::Gray, EditorBaseSize::Normal);
                 auto classicOnSpr = EditorButtonSprite::create(
@@ -378,8 +107,7 @@ bool RLLevelBrowserLayer::init(GJSearchObject* object) {
                     pageMenu->updateLayout();
                 }
 
-                auto platIcon =
-                    CCSprite::createWithSpriteFrameName("RL_planetBig.png"_spr);
+                auto platIcon = CCSprite::createWithSpriteFrameName("RL_planetBig.png"_spr);
                 auto platOffSpr = EditorButtonSprite::create(
                     platIcon, EditorBaseColor::Gray, EditorBaseSize::Normal);
                 auto platOnSpr = EditorButtonSprite::create(
@@ -428,49 +156,236 @@ bool RLLevelBrowserLayer::init(GJSearchObject* object) {
         }
     }
 
-    auto refreshSpr = CCSprite::createWithSpriteFrameName("RL_refresh01.png"_spr);
+    auto* refreshSpr = CCSprite::createWithSpriteFrameName("RL_refresh01.png"_spr);
     m_refreshBtn = CCMenuItemSpriteExtra::create(
         refreshSpr, this, menu_selector(RLLevelBrowserLayer::onRefresh));
     m_refreshBtn->setPosition({winSize.width - 35, 35});
     uiMenu->addChild(m_refreshBtn);
 
     // page buttons
-    auto prevSpr = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
+    auto* prevSpr = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
     m_prevButton = CCMenuItemSpriteExtra::create(
         prevSpr, this, menu_selector(RLLevelBrowserLayer::onPrevPage));
     m_prevButton->setPosition({20, winSize.height / 2});
     uiMenu->addChild(m_prevButton);
-    if (m_prevButton)
-        m_prevButton->setVisible(false);
+    m_prevButton->setVisible(false);
 
-    auto nextSpr = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
+    auto* nextSpr = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
     nextSpr->setFlipX(true);
     m_nextButton = CCMenuItemSpriteExtra::create(
         nextSpr, this, menu_selector(RLLevelBrowserLayer::onNextPage));
     m_nextButton->setPosition({winSize.width - 20, winSize.height / 2});
     uiMenu->addChild(m_nextButton);
-    if (m_nextButton)
-        m_nextButton->setVisible(false);
-
-    m_circle = nullptr;
-
-    auto glm = GameLevelManager::get();
-    if (glm) {
-        glm->m_levelManagerDelegate = this;
-        this->refreshLevels(false);
-    }
+    m_nextButton->setVisible(false);
 
     this->scheduleUpdate();
     this->setKeypadEnabled(true);
 
-    applyModeFetch(false);
+    this->retain();
+    geode::queueInMainThread([this]() {
+        geode::queueInMainThread([this]() {
+            if (auto* glm = GameLevelManager::get()) {
+                glm->m_levelManagerDelegate = this;
+                this->refreshLevels(false);
+            }
+            this->applyModeFetch(false);
+            this->release();
+        });
+    });
 
     return true;
 }
 
+void RLLevelBrowserLayer::setupBackground() { rl::addLayerBackground(this); }
+
+void RLLevelBrowserLayer::setupControls(CCMenu* uiMenu) {
+    uiMenu->setPosition({0, 0});
+
+    auto winSize = CCDirector::sharedDirector()->getWinSize();
+    const char* title = m_title.empty() ? "Rated Layouts" : m_title.c_str();
+
+    addBackButton(this, BackButtonStyle::Pink);
+
+    auto infoSpr = CCSprite::createWithSpriteFrameName("RL_info01.png"_spr);
+    infoSpr->setScale(0.7f);
+    auto infoButton = CCMenuItemSpriteExtra::create(
+        infoSpr, this, menu_selector(RLLevelBrowserLayer::onInfoButton));
+    infoButton->setPosition({25, 25});
+    uiMenu->addChild(infoButton);
+
+    // compact mode toggle button (bottom-left)
+    auto compactSpr = CCSprite::createWithSpriteFrameName("GJ_smallModeIcon_001.png");
+    if (compactSpr) {
+        m_compactToggleBtn = CCMenuItemSpriteExtra::create(
+            compactSpr, this, menu_selector(RLLevelBrowserLayer::onCompactToggle));
+        if (m_compactToggleBtn) {
+            m_compactToggleBtn->setPosition(
+                {infoButton->getPositionX(), infoButton->getPositionY() + 40});
+            uiMenu->addChild(m_compactToggleBtn);
+
+            m_compactMode = CachedSettings::get()->isCompact;
+            m_compactToggleBtn->setOpacity(m_compactMode ? 255 : 180);
+        }
+    }
+
+    this->addChild(uiMenu, 10);
+
+    m_listNode = cue::ListNode::create(
+        {LIST_SIZE.width, LIST_SIZE.height}, {191, 114, 62, 255}, cue::ListBorderStyle::Levels);
+    m_listNode->setAnchorPoint({0.5f, 0.5f});
+    m_listNode->setPosition(winSize.width / 2 - 5.f, winSize.height / 2 - 5.f);
+    this->addChild(m_listNode, 5);
+    m_scrollLayer = m_listNode->getScrollLayer();
+
+    m_titleLabel = CCLabelBMFont::create(m_title.c_str(), "bigFont.fnt");
+    if (m_titleLabel) {
+        m_titleLabel->setAnchorPoint({0.5f, 0.5f});
+        m_titleLabel->setPosition({LIST_SIZE.width / 2.f, LIST_SIZE.height + 18.f});
+        m_titleLabel->limitLabelWidth(LIST_SIZE.width - 30.f, .8f, 0.5f);
+        m_listNode->addChild(m_titleLabel, 1);
+    }
+
+    if (!CachedSettings::get()->disableScrollbar) {
+        auto scrollBar = Scrollbar::create(m_scrollLayer);
+        scrollBar->setPosition({LIST_SIZE.width + 24.f, LIST_SIZE.height / 2});
+        scrollBar->setContentHeight(LIST_SIZE.height - 20);
+        m_listNode->addChild(scrollBar, 10);
+    }
+
+    if (auto* contentLayer = m_scrollLayer->m_contentLayer) {
+        auto layout = ColumnLayout::create();
+        contentLayer->setLayout(layout);
+        layout->setGap(0.f);
+        layout->setAutoGrowAxis(220.f);
+        layout->setAxisReverse(true);
+        layout->setAxisAlignment(AxisAlignment::End);
+        auto spinner = LoadingSpinner::create(64.f);
+        if (spinner) {
+            spinner->setID("rl-spinner");
+            auto win = CCDirector::sharedDirector()->getWinSize();
+            spinner->setPosition(win / 2);
+            this->addChild(spinner, 1000);
+            m_spinner = spinner;
+        }
+    }
+}
+
+int RLLevelBrowserLayer::computeModeType() const {
+    switch (m_mode) {
+    case Mode::Featured: return 2;
+    case Mode::AdminSent: return 4;
+    case Mode::LegendarySends: return 5;
+    case Mode::Sent: return 1;
+    default: return 0;
+    }
+}
+
+int RLLevelBrowserLayer::parseModeParam(int fallback) const {
+    if (m_modeParams.empty()) return fallback;
+    auto& val = m_modeParams.front().second;
+    int parsed = 0;
+    auto res = std::from_chars(val.data(), val.data() + val.size(), parsed);
+    if (res.ec == std::errc()) return parsed;
+    return fallback;
+}
+
+void RLLevelBrowserLayer::updatePagingFromJson(matjson::Value const& json) {
+    if (auto page = json.get("page")) {
+        if (auto p = page.unwrap().as<int>()) m_page = std::max(0, p.unwrap() - 1);
+    }
+
+    if (auto total = json.get("total")) {
+        if (auto tp = total.unwrap().asInt()) {
+            m_totalLevels = tp.unwrap();
+            m_totalPages = (m_totalLevels + PER_PAGE - 1) / PER_PAGE;
+        }
+    }
+
+    if (m_totalPages < 1) m_totalPages = 1;
+
+    if (m_page < 0) m_page = 0;
+    if (m_page >= m_totalPages) m_page = (m_totalPages > 0) ? (m_totalPages - 1) : 0;
+
+    this->updatePageButton();
+}
+
+static const std::vector<matjson::Value>* GetArrayFromJSON(matjson::Value const& json) {
+    if (!json.isArray()) return nullptr;
+    auto& arr = json.asArray().unwrap();
+    if (arr.empty()) return nullptr;
+    return &arr;
+}
+
+static std::string ExtractLevelIDsFromJSONArray(std::vector<matjson::Value> const& json) {
+    std::vector<int> ids;
+    ids.reserve(json.size());
+    for (auto& val : json) {
+        if (auto id = val.as<int>()) ids.push_back(id.unwrap());
+    }
+
+    if (!ids.empty()) [[likely]] {
+        return fmt::format("{}", fmt::join(ids, ","));
+    } else [[unlikely]] {
+        return "";
+    }
+}
+
+std::string RLLevelBrowserLayer::extractLevelIDs(matjson::Value const& json) const {
+    if (auto* levels = GetArrayFromJSON(json["levels"])) {
+        return ExtractLevelIDsFromJSONArray(*levels);
+    }
+
+    if (auto* levelIds = GetArrayFromJSON(json["levelIds"])) {
+        return ExtractLevelIDsFromJSONArray(*levelIds);
+    }
+
+    if (auto* ids = GetArrayFromJSON(json)) {
+        return ExtractLevelIDsFromJSONArray(*ids);
+    }
+
+    log::info("extractLevelIDs: No IDs found in json");
+    return "";
+}
+
+void RLLevelBrowserLayer::processFetchedLevelIDs(std::string const& levelIDs,
+                                                 std::string const& emptyMessage) {
+    if (!levelIDs.empty()) {
+        m_searchObject = GJSearchObject::create(SearchType::Type19, levelIDs);
+        if (auto* glm = GameLevelManager::get()) {
+            glm->m_levelManagerDelegate = this;
+            glm->getOnlineLevels(m_searchObject);
+        } else {
+            this->stopLoading();
+        }
+    } else {
+        Notification::create(emptyMessage, NotificationIcon::Warning)->show();
+        this->stopLoading();
+    }
+}
+
+void RLLevelBrowserLayer::processFetchedLevelIDs(matjson::Value const& json,
+                                                 std::string const& emptyMessage) {
+    auto levelIDs = extractLevelIDs(json);
+    return processFetchedLevelIDs(levelIDs, emptyMessage);
+}
+
+void RLLevelBrowserLayer::applyModeFetch(bool force) {
+    if (m_mode == Mode::Featured || m_mode == Mode::Sent || m_mode == Mode::AdminSent ||
+        m_mode == Mode::LegendarySends) {
+        if (force) m_page = 0;
+        int type = parseModeParam(computeModeType());
+        this->fetchLevelsForType(type);
+    } else if (m_mode == Mode::Account) {
+        if (force) m_page = 0;
+        int accountId = parseModeParam(GJAccountManager::get()->m_accountID);
+        this->fetchAccountLevels(accountId);
+    } else if (m_mode == Mode::Search || m_mode == Mode::EventSafe) {
+        if (!m_modeParams.empty()) this->performSearchQuery(m_modeParams);
+    }
+}
+
 void RLLevelBrowserLayer::onPrevPage(CCObject* sender) {
-    if (m_loading)
-        return;
+    if (m_loading) return;
     if (m_page > 0) {
         m_page--;
         m_levelCache.clear();
@@ -480,8 +395,7 @@ void RLLevelBrowserLayer::onPrevPage(CCObject* sender) {
 }
 
 void RLLevelBrowserLayer::onNextPage(CCObject* sender) {
-    if (m_loading)
-        return;
+    if (m_loading) return;
     if (m_page + 1 < m_totalPages) {
         m_page++;
         m_levelCache.clear();
@@ -490,15 +404,14 @@ void RLLevelBrowserLayer::onNextPage(CCObject* sender) {
     }
 }
 
-void RLLevelBrowserLayer::onRefresh(CCObject* sender) {
-    this->refreshLevels(false);
-}
+void RLLevelBrowserLayer::onRefresh(CCObject* sender) { this->refreshLevels(false); }
 
 void RLLevelBrowserLayer::onPageButton(CCObject* sender) {
     int current = std::clamp(m_page + 1, 1, std::max(1, m_totalPages));
     int begin = 1;
     int end = std::max(1, m_totalPages);
-    auto popup = SetIDPopup::create(current, begin, end, "Go to Page", "Go", false, current, 60.f, true, true);
+    auto popup = SetIDPopup::create(
+        current, begin, end, "Go to Page", "Go", false, current, 60.f, true, true);
     if (popup) {
         popup->m_delegate = this;
         popup->show();
@@ -506,14 +419,10 @@ void RLLevelBrowserLayer::onPageButton(CCObject* sender) {
 }
 
 void RLLevelBrowserLayer::setIDPopupClosed(SetIDPopup* popup, int value) {
-    if (!this->getParent() || !this->isRunning())
-        return;
-    if (!popup || popup->m_cancelled)
-        return;
-    if (value < 1)
-        value = 1;
-    if (m_totalPages > 0 && value > m_totalPages)
-        value = m_totalPages;
+    if (!this->getParent() || !this->isRunning()) return;
+    if (!popup || popup->m_cancelled) return;
+    if (value < 1) value = 1;
+    if (m_totalPages > 0 && value > m_totalPages) value = m_totalPages;
     m_page = value - 1;
     m_levelCache.clear();
     this->updatePageButton();
@@ -527,29 +436,29 @@ void RLLevelBrowserLayer::updatePageButton() {
     }
     // only show the page picker when we have more than one page and the levels
     // label has been populated
-    bool labelHasText = m_levelsLabel && m_levelsLabel->getString() &&
-                        m_levelsLabel->getString()[0] != '\0';
-    if (m_pageButton) {
-        m_pageButton->setVisible(m_totalPages > 1 && labelHasText);
-    }
-    if (m_prevButton) {
-        m_prevButton->setVisible(m_page > 0);
-    }
-    if (m_nextButton) {
-        m_nextButton->setVisible(m_page + 1 < m_totalPages);
-    }
+    bool labelHasText =
+        m_levelsLabel && m_levelsLabel->getString() && m_levelsLabel->getString()[0] != '\0';
+
+    auto update = [](CCMenuItemSpriteExtra* button, bool cond) {
+        if (!button) return;
+        button->setVisible(cond);
+        button->setEnabled(cond);
+    };
+
+    update(m_pageButton, m_totalPages > 1 && labelHasText);
+    update(m_prevButton, m_page > 0);
+    update(m_nextButton, m_page + 1 < m_totalPages);
 }
 
 void RLLevelBrowserLayer::refreshLevels(bool force) {
     startLoading();
-    auto glm = GameLevelManager::get();
-    if (!glm)
-        return;
+    auto* glm = GameLevelManager::get();
+    if (!glm) return;
+    m_levelCache.clear();
     glm->m_levelManagerDelegate = this;
 
-    if (m_mode == Mode::Featured || m_mode == Mode::Sent ||
-        m_mode == Mode::AdminSent || m_mode == Mode::LegendarySends ||
-        m_mode == Mode::Account) {
+    if (m_mode == Mode::Featured || m_mode == Mode::Sent || m_mode == Mode::AdminSent ||
+        m_mode == Mode::LegendarySends || m_mode == Mode::Account) {
         this->applyModeFetch(force);
         return;
     }
@@ -569,234 +478,175 @@ void RLLevelBrowserLayer::refreshLevels(bool force) {
 }
 
 void RLLevelBrowserLayer::fetchLevelsForType(int type) {
-    m_searchTask.cancel();
-    m_levelCache.clear();
-
-    startLoading();
+    prepareForSearch();
     Ref<RLLevelBrowserLayer> self = this;
-    auto req = web::WebRequest();
-    req.param("type", numToString(type))
-        .param("amount", numToString(PER_PAGE))
-        .param("page", numToString(self->m_page + 1));
-    if (self->m_filterClassic) {
-        req.param("isClassic", "1");
-    }
-    if (self->m_filterPlat) {
-        req.param("isPlat", "1");
-    }
-    self->m_searchTask.spawn(
-        req.get(std::string(rl::BASE_API_URL) + "/getLevels"),
-        [self](web::WebResponse res) {
-            if (!self)
-                return;
-            if (!self->getParent() || !self->isRunning())
-                return;
-            if (!res.ok()) {
-                Notification::create("Failed to fetch levels",
-                    NotificationIcon::Error)
-                    ->show();
-                self->stopLoading();
-                return;
-            }
-            auto jsonRes = res.json();
-            if (!jsonRes) {
-                Notification::create("Invalid response", NotificationIcon::Error)
-                    ->show();
-                self->stopLoading();
-                return;
-            }
-            auto json = jsonRes.unwrap();
+    log::info("Preparing to fetch page {} for type {}", m_page + 1, type);
 
-            self->updatePagingFromJson(json);
-            auto levelIDs = self->extractLevelIDs(json);
-            self->processFetchedLevelIDs(levelIDs, "No levels found");
-        });
+    auto req = LocalEndpoint::build("getLevels")
+                   .param("type", type)
+                   .param("page", m_page + 1)
+                   .nkparam("amount", PER_PAGE)
+                   .expires(10_mins)
+                   .nostale()
+                   .take();
+    if (m_filterClassic) {
+        req.param("isClassic=1");
+    }
+    if (m_filterPlat) {
+        req.param("isPlat=1");
+    }
+    m_searchTask.spawn(req.get(), [self](Result<matjson::Value> res) {
+        if (!self || !self->getParent() || !self->isRunning()) {
+            log::debug("Ignored fetched levels");
+            return;
+        }
+        if (res.isErr()) {
+            log::warn("Failed to fetch levels: {}", res.unwrapErr());
+            Notification::create("Failed to fetch levels", NotificationIcon::Error)->show();
+            self->stopLoading();
+            return;
+        }
+
+        auto json = std::move(res).unwrap();
+        self->updatePagingFromJson(json);
+        self->processFetchedLevelIDs(json, "No levels found");
+    });
 }
 
 // fetch layout ids for a specific account
 void RLLevelBrowserLayer::fetchAccountLevels(int accountId) {
-    m_searchTask.cancel();
-    m_levelCache.clear();
-
-    startLoading();
+    prepareForSearch();
     Ref<RLLevelBrowserLayer> self = this;
-    auto req = web::WebRequest();
-    req.param("accountId", numToString(accountId))
-        .param("amount", numToString(PER_PAGE))
-        .param("page", numToString(self->m_page + 1));
-    if (self->m_filterClassic) {
-        req.param("isClassic", "1");
+    auto req = LocalEndpoint::build("getAccountLevels")
+                   .param("accountId", accountId)
+                   .param("page", m_page + 1)
+                   .nkparam("amount", PER_PAGE)
+                   .expires(10_mins)
+                   .nostale()
+                   .take();
+    if (m_filterClassic) {
+        req.param("isClassic=1");
     }
-    if (self->m_filterPlat) {
-        req.param("isPlat", "1");
+    if (m_filterPlat) {
+        req.param("isPlat=1");
     }
-    self->m_searchTask.spawn(
-        req.get(std::string(rl::BASE_API_URL) + "/getAccountLevels"),
-        [self](web::WebResponse const& res) {
-            if (!self)
-                return;
-            if (!self->getParent() || !self->isRunning())
-                return;
-            if (!res.ok()) {
-                Notification::create("Failed to fetch levels",
-                    NotificationIcon::Error)
-                    ->show();
-                self->stopLoading();
-                return;
-            }
-            auto jsonRes = res.json();
-            if (!jsonRes) {
-                Notification::create("Invalid response", NotificationIcon::Error)
-                    ->show();
-                self->stopLoading();
-                return;
-            }
-            auto json = jsonRes.unwrap();
+    m_searchTask.spawn(req.get(), [self](Result<matjson::Value> res) {
+        if (!self || !self->getParent() || !self->isRunning()) return;
+        if (res.isErr()) {
+            log::warn("Failed to fetch levels: {}", res.unwrapErr());
+            Notification::create("Failed to fetch levels", NotificationIcon::Error)->show();
+            self->stopLoading();
+            return;
+        }
 
-            self->updatePagingFromJson(json);
-            auto levelIDs = self->extractLevelIDs(json);
-            self->processFetchedLevelIDs(levelIDs, "No levels found");
-        });
+        auto json = std::move(res).unwrap();
+        self->updatePagingFromJson(json);
+        self->processFetchedLevelIDs(json, "No levels found");
+    });
 }
 
 void RLLevelBrowserLayer::performSearchQuery(ParamList const& params) {
-    m_searchTask.cancel();
-    m_levelCache.clear();
-    startLoading();
+    prepareForSearch();
     Ref<RLLevelBrowserLayer> self = this;
 
     // call the event endpoint directly and use returned level ids
-    for (auto const& p : params) {
-        if (p.first == "safe") {
-            std::string url =
-                std::string(rl::BASE_API_URL) + "/getEvent?safe=" +
-                p.second + std::string("&amount=") + numToString(PER_PAGE) +
-                std::string("&page=") + numToString(self->m_page + 1);
-            self->m_searchTask.spawn(
-                web::WebRequest().get(url), [self](web::WebResponse const& res) {
-                    if (!self)
-                        return;
-                    if (!self->getParent() || !self->isRunning())
-                        return;
-                    if (!res.ok()) {
-                        Notification::create("Failed to fetch event safe list",
-                            NotificationIcon::Error)
-                            ->show();
-                        self->stopLoading();
-                        return;
-                    }
-                    auto jsonRes = res.json();
-                    if (!jsonRes) {
-                        Notification::create("Invalid event response",
-                            NotificationIcon::Warning)
-                            ->show();
-                        self->stopLoading();
-                        return;
-                    }
-                    auto json = jsonRes.unwrap();
+    for (auto const& [name, value] : params) {
+        if (name != "safe") continue;
+        auto req = LocalEndpoint::build("getEvent")
+                       .param("safe", value)
+                       .param("page", m_page + 1)
+                       .nkparam("amount", PER_PAGE)
+                       .expires(5_mins)
+                       .nostale()
+                       .take();
+        m_searchTask.spawn(req.get(), [self](Result<matjson::Value> res) {
+            if (!self || !self->getParent() || !self->isRunning()) return;
+            if (res.isErr()) {
+                log::warn("Failed to fetch safe event list: {}", res.unwrapErr());
+                Notification::create("Failed to fetch event safe list", NotificationIcon::Error)
+                    ->show();
+                self->stopLoading();
+                return;
+            }
 
-                    self->updatePagingFromJson(json);
-                    auto levelIDs = self->extractLevelIDs(json);
-                    self->processFetchedLevelIDs(levelIDs, "No levels returned");
-                });
-            return;
-        }
+            auto json = std::move(res).unwrap();
+            self->updatePagingFromJson(json);
+            self->processFetchedLevelIDs(json, "No levels returned");
+        });
+        return;
     }
 
     // proxy params to the search endpoint
     auto req = web::WebRequest();
-    for (auto& p : params)
-        req.param(p.first.c_str(), p.second);
+    for (auto const& [name, value] : params) req.param(name, value);
     // ensure account id is present and include paging parameters
     req.param("accountId", numToString(GJAccountManager::get()->m_accountID))
         .param("amount", numToString(PER_PAGE))
         .param("page", numToString(self->m_page + 1));
-    self->m_searchTask.spawn(
-        req.get(std::string(rl::BASE_API_URL) + "/search"),
-        [self](web::WebResponse const& res) {
-            if (!self)
-                return;
-            if (!self->getParent() || !self->isRunning())
-                return;
-            if (!res.ok()) {
-                Notification::create("Search request failed", NotificationIcon::Error)
-                    ->show();
-                self->stopLoading();
-                return;
-            }
-            auto jsonRes = res.json();
-            if (!jsonRes) {
-                Notification::create("Failed to parse search response",
-                    NotificationIcon::Error)
-                    ->show();
-                self->stopLoading();
-                return;
-            }
-            auto json = jsonRes.unwrap();
+    self->m_searchTask2.spawn(req.get(std::string(rl::BASE_API_URL) + "/search"),
+                              [self](web::WebResponse const& res) {
+        if (!self || !self->getParent() || !self->isRunning()) return;
+        if (!res.ok()) {
+            Notification::create("Search request failed", NotificationIcon::Error)->show();
+            self->stopLoading();
+            return;
+        }
+        auto jsonRes = res.json();
+        if (!jsonRes) {
+            Notification::create("Failed to parse search response", NotificationIcon::Error)
+                ->show();
+            self->stopLoading();
+            return;
+        }
+        auto json = jsonRes.unwrap();
 
-            if (json.contains("page")) {
-                if (auto p = json["page"].as<int>(); p) {
-                    int srvPage = p.unwrap();
-                    self->m_page = std::max(0, srvPage - 1);
-                }
+        if (json.contains("page")) {
+            if (auto p = json["page"].as<int>(); p) {
+                int srvPage = p.unwrap();
+                self->m_page = std::max(0, srvPage - 1);
             }
+        }
 
-            if (json.contains("total")) {
-                if (auto tp = json["total"].as<int>(); tp) {
-                    self->m_totalLevels = tp.unwrap();
-                    self->m_totalPages =
-                        (self->m_totalLevels + PER_PAGE - 1) / PER_PAGE;
-                }
+        if (json.contains("total")) {
+            if (auto tp = json["total"].as<int>(); tp) {
+                self->m_totalLevels = tp.unwrap();
+                self->m_totalPages = (self->m_totalLevels + PER_PAGE - 1) / PER_PAGE;
             }
+        }
 
-            if (self->m_totalPages < 1)
-                self->m_totalPages = 1;
+        if (self->m_totalPages < 1) self->m_totalPages = 1;
 
-            if (self->m_page < 0)
-                self->m_page = 0;
-            if (self->m_page >= self->m_totalPages) {
-                self->m_page =
-                    (self->m_totalPages > 0) ? (self->m_totalPages - 1) : 0;
-            }
-            self->updatePageButton();
+        if (self->m_page < 0) self->m_page = 0;
+        if (self->m_page >= self->m_totalPages) {
+            self->m_page = (self->m_totalPages > 0) ? (self->m_totalPages - 1) : 0;
+        }
+        self->updatePageButton();
 
-            std::string levelIDs;
-            bool first = true;
-            if (json.contains("levelIds")) {
-                auto arr = json["levelIds"];
-                for (auto v : arr) {
-                    auto id = v.as<int>();
-                    if (!id)
-                        continue;
-                    if (!first)
-                        levelIDs += ",";
-                    levelIDs += numToString(id.unwrap());
-                    first = false;
-                }
-            }
-            if (!levelIDs.empty()) {
-                self->m_searchObject =
-                    GJSearchObject::create(SearchType::Type19, levelIDs.c_str());
-                auto glm = GameLevelManager::get();
-                if (glm) {
-                    glm->m_levelManagerDelegate = self;
-                    glm->getOnlineLevels(self->m_searchObject);
-                } else {
-                    self->stopLoading();
-                }
+        std::string levelIDs;
+        if (auto* ids = GetArrayFromJSON(json["levelIds"])) {
+            levelIDs = ExtractLevelIDsFromJSONArray(*ids);
+        }
+        if (!levelIDs.empty()) {
+            self->m_searchObject = GJSearchObject::create(SearchType::Type19, std::move(levelIDs));
+            auto glm = GameLevelManager::get();
+            if (glm) {
+                glm->m_levelManagerDelegate = self;
+                glm->getOnlineLevels(self->m_searchObject);
             } else {
-                Notification::create("No results returned", NotificationIcon::Warning)
-                    ->show();
                 self->stopLoading();
             }
-        });
+        } else {
+            Notification::create("No results returned", NotificationIcon::Warning)->show();
+            self->stopLoading();
+        }
+    });
 }
 
 void RLLevelBrowserLayer::startLoading() {
     m_loading = true;
-    if (m_circle) {
-        m_circle->removeFromParent();
-        m_circle = nullptr;
+    if (m_spinner) {
+        m_spinner->removeFromParent();
+        m_spinner = nullptr;
     }
     // remove any existing spinner nodes safely
     if (auto spinner = this->getChildByID("rl-spinner")) {
@@ -805,8 +655,7 @@ void RLLevelBrowserLayer::startLoading() {
     if (m_listNode) {
         m_listNode->clear();
     } else if (m_scrollLayer && m_scrollLayer->m_contentLayer) {
-        if (auto childSpinner =
-                m_scrollLayer->m_contentLayer->getChildByID("rl-spinner")) {
+        if (auto childSpinner = m_scrollLayer->m_contentLayer->getChildByID("rl-spinner")) {
             childSpinner->removeFromParent();
         }
         m_scrollLayer->m_contentLayer->removeAllChildrenWithCleanup(true);
@@ -818,25 +667,25 @@ void RLLevelBrowserLayer::startLoading() {
         auto win = CCDirector::sharedDirector()->getWinSize();
         spinner->setPosition(win / 2);
         this->addChild(spinner, 1000);
-        m_circle = spinner;
+        m_spinner = spinner;
     }
 }
 
 void RLLevelBrowserLayer::stopLoading() {
     m_loading = false;
     if (m_scrollLayer && m_scrollLayer->m_contentLayer) {
-        if (auto childSpinner =
-                m_scrollLayer->m_contentLayer->getChildByID("rl-spinner")) {
+        if (auto childSpinner = m_scrollLayer->m_contentLayer->getChildByID("rl-spinner")) {
             childSpinner->removeFromParent();
         }
     }
     if (auto spinner = this->getChildByID("rl-spinner")) {
         spinner->removeFromParent();
     }
-    m_circle = nullptr;
+    m_spinner = nullptr;
 }
 
 void RLLevelBrowserLayer::loadLevelsFinished(CCArray* levels, char const* key, int p2) {
+    log::info("Loaded {} levels '{}' ({})", (levels ? levels->count() : 0), key, p2);
     if (!this->getParent() || !this->isRunning()) {
         return;
     }
@@ -849,8 +698,7 @@ void RLLevelBrowserLayer::loadLevelsFinished(CCArray* levels, char const* key, i
 
     // store into cache map
     for (auto lvlObj : CCArrayExt<GJGameLevel*>(levels)) {
-        if (!lvlObj)
-            continue;
+        if (!lvlObj) continue;
         m_levelCache[lvlObj->m_levelID] = lvlObj;
     }
 
@@ -859,23 +707,20 @@ void RLLevelBrowserLayer::loadLevelsFinished(CCArray* levels, char const* key, i
 }
 
 void RLLevelBrowserLayer::loadLevelsFailed(char const* key, int p1) {
-    Notification::create("Failed to load levels", NotificationIcon::Error)
-        ->show();
+    Notification::create("Failed to load levels", NotificationIcon::Error)->show();
+    log::error("Failed to load levels '{}' ({})", key, p1);
     stopLoading();
 }
 
 void RLLevelBrowserLayer::populateFromArray(CCArray* levels) {
-    if (!m_listNode || !levels)
-        return;
-
+    if (!m_listNode || !levels) return;
     m_listNode->clear();
 
     const float defaultCellH = 90.f;
     const float compactCellH = 50.f;
     int index = 0;
     for (GJGameLevel* level : CCArrayExt<GJGameLevel*>(levels)) {
-        if (!level)
-            continue;
+        if (!level) continue;
         float cellH = m_compactMode ? compactCellH : defaultCellH;
         auto cell = new LevelCell("RLLevelCell", 356.f, cellH);
         cell->autorelease();
@@ -888,15 +733,13 @@ void RLLevelBrowserLayer::populateFromArray(CCArray* levels) {
         index++;
 
         // adjust position for compact mode to align with non-compact cells
-        if (m_compactMode && !Loader::get()->isModLoaded("cvolton.compact_lists")) {
+        if (m_compactMode && !CachedSettings::mods()->compact_lists) {
             cell->m_mainLayer->setPositionX(cell->m_mainLayer->getPositionX() - 20.f);
             cell->m_mainMenu->setPositionX(cell->m_mainMenu->getPositionX() + 20.f);
-            if (auto creatorName =
-                    cell->m_mainMenu->getChildByIDRecursive("creator-name")) {
+            if (auto creatorName = cell->m_mainMenu->getChildByIDRecursive("creator-name")) {
                 creatorName->setPositionX(creatorName->getPositionX() - 20.f);
             }
-            if (auto completedIcon =
-                    cell->m_mainLayer->getChildByIDRecursive("completed-icon")) {
+            if (auto completedIcon = cell->m_mainLayer->getChildByIDRecursive("completed-icon")) {
                 completedIcon->setPosition(295.f, compactCellH / 2);
             }
             if (auto percentageLabel =
@@ -919,8 +762,7 @@ void RLLevelBrowserLayer::populateFromArray(CCArray* levels) {
         last = 0;
     }
     int total = (m_totalLevels > 0) ? m_totalLevels : returned;
-    m_levelsLabel->setString(
-        fmt::format("{} to {} of {}", first, last, total).c_str());
+    m_levelsLabel->setString(fmt::format("{} to {} of {}", first, last, total).c_str());
 
     m_needsLayout = true;
     this->updatePageButton();
@@ -942,31 +784,31 @@ void RLLevelBrowserLayer::onExit() {
 }
 
 void RLLevelBrowserLayer::updateFilterButtons() {
-    if (m_filterButtonUpdating)
-        return;
+    if (m_filterButtonUpdating) return;
     m_filterButtonUpdating = true;
     if (m_classicBtn) {
-        log::debug("updateFilterButtons: classic flag={}, setting sprite",
-            m_filterClassic);
+        log::debug("updateFilterButtons: classic flag={}, setting sprite", m_filterClassic);
         auto icon = CCSprite::createWithSpriteFrameName("RL_starBig.png"_spr);
         auto spr = EditorButtonSprite::create(
-            icon, m_filterClassic ? EditorBaseColor::Cyan : EditorBaseColor::Gray, EditorBaseSize::Normal);
+            icon,
+            m_filterClassic ? EditorBaseColor::Cyan : EditorBaseColor::Gray,
+            EditorBaseSize::Normal);
         m_classicBtn->setNormalImage(spr);
     }
     if (m_planetBtn) {
-        log::debug("updateFilterButtons: planet flag={}, setting sprite",
-            m_filterPlat);
+        log::debug("updateFilterButtons: planet flag={}, setting sprite", m_filterPlat);
         auto icon = CCSprite::createWithSpriteFrameName("RL_planetBig.png"_spr);
-        auto spr = EditorButtonSprite::create(
-            icon, m_filterPlat ? EditorBaseColor::Cyan : EditorBaseColor::Gray, EditorBaseSize::Normal);
+        auto spr =
+            EditorButtonSprite::create(icon,
+                                       m_filterPlat ? EditorBaseColor::Cyan : EditorBaseColor::Gray,
+                                       EditorBaseSize::Normal);
         m_planetBtn->setNormalImage(spr);
     }
     m_filterButtonUpdating = false;
 }
 
 void RLLevelBrowserLayer::onClassicFilter(CCObject* sender) {
-    if (m_filterButtonUpdating)
-        return;
+    if (m_filterButtonUpdating) return;
     bool before = m_filterClassic;
     log::debug("classic button pressed: before flag={}", before);
 
@@ -981,8 +823,7 @@ void RLLevelBrowserLayer::onClassicFilter(CCObject* sender) {
 }
 
 void RLLevelBrowserLayer::onPlanetFilter(CCObject* sender) {
-    if (m_filterButtonUpdating)
-        return;
+    if (m_filterButtonUpdating) return;
 
     bool before = m_filterPlat;
     log::debug("planet button pressed: before flag={}", before);
@@ -998,8 +839,7 @@ void RLLevelBrowserLayer::onPlanetFilter(CCObject* sender) {
 }
 
 void RLLevelBrowserLayer::onDeleteFilter(CCObject* sender) {
-    if (!sender)
-        return;
+    if (!sender) return;
 
     int type = 0;
     std::string typeStr;
@@ -1015,89 +855,90 @@ void RLLevelBrowserLayer::onDeleteFilter(CCObject* sender) {
 
     createQuickPopup(
         "Delete All Sent Levels?",
-        fmt::format("Are you sure you want to <cr>delete all</c> <cg>sent levels</c> for <co>{}</c> levels?\n<cy>This action cannot be undone.</c>", typeStr),
+        fmt::format(
+            "Are you sure you want to <cr>delete all</c> <cg>sent levels</c> for <co>{}</c> "
+            "levels?\n<cy>This action cannot be undone.</c>",
+            typeStr),
         "Cancel",
         "Delete",
         [this, type](FLAlertLayer*, bool yes) {
-            if (!yes)
-                return;
+        if (!yes) return;
 
-            auto upopup = UploadActionPopup::create(nullptr, "Deleting all sends...");
-            upopup->show();
+        auto upopup = UploadActionPopup::create(nullptr, "Deleting all sends...");
+        upopup->show();
 
-            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
-            if (token.empty()) {
-                log::error("Failed to get user token");
-                upopup->showFailMessage("Token not found!");
+        auto token = RLArgon::token();
+        if (token.empty()) {
+            log::error("Failed to get user token");
+            upopup->showFailMessage("Token not found!");
+            return;
+        }
+
+        matjson::Value jsonBody = matjson::Value::object();
+        jsonBody["accountId"] = GJAccountManager::get()->m_accountID;
+        jsonBody["argonToken"] = token;
+        jsonBody["type"] = type;
+
+        auto postReq = web::WebRequest();
+        postReq.bodyJSON(jsonBody);
+
+        Ref<RLLevelBrowserLayer> self = this;
+        Ref<UploadActionPopup> popupRef = upopup;
+        self->m_deleteAllSendsTask.spawn(
+            postReq.post(std::string(rl::BASE_API_URL) + "/deleteAllSends"),
+            [self, popupRef](web::WebResponse response) {
+            if (!self || !popupRef) return;
+
+            if (!response.ok()) {
+                log::warn("Server returned non-ok status: {}", response.code());
+                popupRef->showFailMessage("Failed to delete sends.");
                 return;
             }
 
-            matjson::Value jsonBody = matjson::Value::object();
-            jsonBody["accountId"] = GJAccountManager::get()->m_accountID;
-            jsonBody["argonToken"] = token;
-            jsonBody["type"] = type;
+            auto jsonRes = response.json();
+            if (!jsonRes) {
+                log::warn("Failed to parse JSON response");
+                popupRef->showFailMessage("Invalid server response.");
+                return;
+            }
 
-            auto postReq = web::WebRequest();
-            postReq.bodyJSON(jsonBody);
-
-            Ref<RLLevelBrowserLayer> self = this;
-            Ref<UploadActionPopup> popupRef = upopup;
-            self->m_deleteAllSendsTask.spawn(
-                postReq.post(std::string(rl::BASE_API_URL) + "/deleteAllSends"),
-                [self, popupRef](web::WebResponse response) {
-                    if (!self || !popupRef)
-                        return;
-
-                    if (!response.ok()) {
-                        log::warn("Server returned non-ok status: {}", response.code());
-                        popupRef->showFailMessage("Failed to delete sends.");
-                        return;
-                    }
-
-                    auto jsonRes = response.json();
-                    if (!jsonRes) {
-                        log::warn("Failed to parse JSON response");
-                        popupRef->showFailMessage("Invalid server response.");
-                        return;
-                    }
-
-                    auto json = jsonRes.unwrap();
-                    bool success = json["success"].asBool().unwrapOrDefault();
-                    if (success) {
-                        popupRef->showSuccessMessage("All sends deleted!");
-                        self->refreshLevels(true);
-                    } else {
-                        popupRef->showFailMessage("Failed to delete sends.");
-                    }
-                });
+            auto json = jsonRes.unwrap();
+            bool success = json["success"].asBool().unwrapOrDefault();
+            if (success) {
+                popupRef->showSuccessMessage("All sends deleted!");
+                self->refreshLevels(true);
+            } else {
+                popupRef->showFailMessage("Failed to delete sends.");
+            }
         });
+    });
 }
 
 void RLLevelBrowserLayer::onInfoButton(CCObject* sender) {
     FLAlertLayer::create(
         "Layouts",
-        "<cl>Layout</c> listed here rewards <cl>Spark</c> or <co>Planets</c> if is rated by the <cr>Layout Admins</c>.\n\n"
-        "For sent layouts, each of the layouts here has at least <cg>one sent by Layout Mods</c> and can only be rated when it has at least <cb>3+ sends</c>.",
+        "<cl>Layout</c> listed here rewards <cl>Spark</c> or <co>Planets</c> if is rated by the "
+        "<cr>Layout Admins</c>.\n\n"
+        "For sent layouts, each of the layouts here has at least <cg>one sent by Layout Mods</c> "
+        "and "
+        "can only be rated when it has at least <cb>3+ sends</c>.",
         "OK")
         ->show();
 }
 
 void RLLevelBrowserLayer::onCompactToggle(CCObject* sender) {
     m_compactMode = !m_compactMode;
-    Mod::get()->setSavedValue<bool>("compact_mode", m_compactMode);
+    CachedSettings::update()->isCompact = m_compactMode;
     if (m_compactToggleBtn) {
         m_compactToggleBtn->setOpacity(m_compactMode ? 255 : 180);
     }
 
-    if (!m_listNode)
-        return;
+    if (!m_listNode) return;
 
     std::vector<GJGameLevel*> levels;
     for (auto* cell : m_listNode->iter<LevelCell>()) {
-        if (!cell)
-            continue;
-        if (cell->m_level)
-            levels.push_back(cell->m_level);
+        if (!cell) continue;
+        if (cell->m_level) levels.push_back(cell->m_level);
     }
 
     m_listNode->clear();
@@ -1107,8 +948,7 @@ void RLLevelBrowserLayer::onCompactToggle(CCObject* sender) {
 
     int index = 0;
     for (auto lvl : levels) {
-        if (!lvl)
-            continue;
+        if (!lvl) continue;
         float cellH = m_compactMode ? compactCellH : defaultCellH;
         auto cell = new LevelCell("RLLevelCell", 356.f, cellH);
         cell->autorelease();
@@ -1123,15 +963,13 @@ void RLLevelBrowserLayer::onCompactToggle(CCObject* sender) {
         index++;
 
         // adjust position for compact mode to align with non-compact cells
-        if (m_compactMode && !Loader::get()->isModLoaded("cvolton.compact_lists")) {
+        if (m_compactMode && !CachedSettings::mods()->compact_lists) {
             cell->m_mainLayer->setPositionX(cell->m_mainLayer->getPositionX() - 20.f);
             cell->m_mainMenu->setPositionX(cell->m_mainMenu->getPositionX() + 20.f);
-            if (auto creatorName =
-                    cell->m_mainMenu->getChildByIDRecursive("creator-name")) {
+            if (auto creatorName = cell->m_mainMenu->getChildByIDRecursive("creator-name")) {
                 creatorName->setPositionX(creatorName->getPositionX() - 20.f);
             }
-            if (auto completedIcon =
-                    cell->m_mainLayer->getChildByIDRecursive("completed-icon")) {
+            if (auto completedIcon = cell->m_mainLayer->getChildByIDRecursive("completed-icon")) {
                 completedIcon->setPosition(295.f, compactCellH / 2);
             }
             if (auto percentageLabel =
@@ -1146,8 +984,7 @@ void RLLevelBrowserLayer::onCompactToggle(CCObject* sender) {
 void RLLevelBrowserLayer::update(float dt) {
     if (m_needsLayout) {
         auto contentLayer = m_listNode->getScrollLayer()->m_contentLayer;
-        if (contentLayer->getChildren() &&
-            contentLayer->getChildren()->count() > 0) {
+        if (contentLayer->getChildren() && contentLayer->getChildren()->count() > 0) {
             contentLayer->updateLayout();
             m_scrollLayer->scrollToTop();
         }
@@ -1164,6 +1001,5 @@ void RLLevelBrowserLayer::update(float dt) {
 }
 
 void RLLevelBrowserLayer::keyBackClicked() {
-    CCDirector::sharedDirector()->popSceneWithTransition(
-        0.5f, PopTransition::kPopTransitionFade);
+    CCDirector::sharedDirector()->popSceneWithTransition(0.5f, PopTransition::kPopTransitionFade);
 }

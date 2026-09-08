@@ -223,253 +223,239 @@ bool RLEventLayouts::init() {
     this->scheduleUpdate();
 
     // Fetch event info from server
-    {
-        Ref<RLEventLayouts> self = this;
-        self->m_eventTask.spawn(
-            web::WebRequest().get(std::string(rl::BASE_API_URL) + "/getEvent"),
-            [self](web::WebResponse res) {
-                if (!self)
-                    return;
-                if (!res.ok()) {
-                    Notification::create("Failed to fetch event info",
-                        NotificationIcon::Error)
-                        ->show();
-                    return;
-                }
-                auto jsonResult = res.json();
-                if (!jsonResult) {
-                    Notification::create("Invalid event JSON",
-                        NotificationIcon::Warning)
-                        ->show();
-                    return;
-                }
+    Ref<RLEventLayouts> self = this;
+    self->m_eventTask.spawn(
+        LocalEndpoint::get("getEvent"),
+        [self](Result<matjson::Value> res) {
+            if (res.isErr()) {
+                Notification::create(res.unwrapErr(), NotificationIcon::Warning)->show();
+                return;
+            }
 
-                auto json = jsonResult.unwrap();
+            auto json = std::move(res).unwrap();
+            std::vector<std::string> keys = {"daily", "weekly", "monthly"};
+            int idx = static_cast<int>(self->m_eventType);
+            if (idx < 0 || idx >= 3)
+                return;
+            const auto& key = keys[idx];
+            auto sec = &self->m_sections[idx];
 
-                std::vector<std::string> keys = {"daily", "weekly", "monthly"};
-                int idx = static_cast<int>(self->m_eventType);
-                if (idx < 0 || idx >= 3)
-                    return;
-                const auto& key = keys[idx];
-                auto sec = &self->m_sections[idx];
+            if (!json.contains(key)) {
+                return;
+            }
+            auto obj = json[key];
+            int levelId = -1;
+            auto levelIdValue = obj["levelId"].as<int>();
+            if (levelIdValue) {
+                levelId = levelIdValue.unwrap();
+            }
 
-                if (!json.contains(key)) {
-                    return;
-                }
-                auto obj = json[key];
-                int levelId = -1;
-                auto levelIdValue = obj["levelId"].as<int>();
-                if (levelIdValue) {
-                    levelId = levelIdValue.unwrap();
-                }
+            self->m_sections[idx].levelId = levelId;
+            self->m_sections[idx].secondsLeft =
+                obj["secondsLeft"].as<int>().unwrapOrDefault();
+            // refresh main timer label now that we have a value
+            const std::vector<std::string> classicPrefixes = {
+                "Next Daily Classic in ", "Next Weekly Classic in ", "Next Monthly Classic in "};
+            if (self->m_sections[idx].timerLabel) {
+                self->m_sections[idx].timerLabel->setString(
+                    (classicPrefixes[idx] + formatTime(static_cast<long>(
+                                                self->m_sections[idx].secondsLeft)))
+                        .c_str());
+            }
 
-                self->m_sections[idx].levelId = levelId;
-                self->m_sections[idx].secondsLeft =
-                    obj["secondsLeft"].as<int>().unwrapOrDefault();
-                // refresh main timer label now that we have a value
-                const std::vector<std::string> classicPrefixes = {
-                    "Next Daily Classic in ", "Next Weekly Classic in ", "Next Monthly Classic in "};
-                if (self->m_sections[idx].timerLabel) {
-                    self->m_sections[idx].timerLabel->setString(
-                        (classicPrefixes[idx] + formatTime(static_cast<long>(
-                                                    self->m_sections[idx].secondsLeft)))
-                            .c_str());
-                }
-
-                // if we already have the full GJGameLevel cached, populate the
-                if (auto glm = GameLevelManager::sharedState()) {
-                    // main-level search object/key
-                    auto mainSearchObj = GJSearchObject::create(
-                        SearchType::Search, fmt::format("{}", levelId));
-                    auto mainKey = std::string(mainSearchObj->getKey());
-                    std::string platJsonKey = mainKey + "Plat";
-                    int platLevelId = -1;
-                    if (json.contains(platJsonKey)) {
-                        auto pval = json[platJsonKey]["levelId"].as<int>();
-                        if (pval) {
-                            platLevelId = pval.unwrap();
-                        }
+            // if we already have the full GJGameLevel cached, populate the
+            if (auto glm = GameLevelManager::sharedState()) {
+                // main-level search object/key
+                auto mainSearchObj = GJSearchObject::create(
+                    SearchType::Search, fmt::format("{}", levelId));
+                auto mainKey = std::string(mainSearchObj->getKey());
+                std::string platJsonKey = mainKey + "Plat";
+                int platLevelId = -1;
+                if (json.contains(platJsonKey)) {
+                    auto pval = json[platJsonKey]["levelId"].as<int>();
+                    if (pval) {
+                        platLevelId = pval.unwrap();
                     }
+                }
 
-                    if (platLevelId > 0) {
-                        auto combinedSearchObj = GJSearchObject::create(
-                            SearchType::Search,
-                            fmt::format("{},{}", levelId, platLevelId));
-                        auto combinedKey = std::string(combinedSearchObj->getKey());
+                if (platLevelId > 0) {
+                    auto combinedSearchObj = GJSearchObject::create(
+                        SearchType::Search,
+                        fmt::format("{},{}", levelId, platLevelId));
+                    auto combinedKey = std::string(combinedSearchObj->getKey());
 
-                        // check cache for combined key
-                        auto storedLvls = glm->getStoredOnlineLevels(combinedKey.c_str());
-                        if (storedLvls && storedLvls->count() > 0) {
-                            // iterate through returned levels and populate matching cells
-                            for (unsigned int si = 0; si < storedLvls->count(); ++si) {
-                                if (auto lvl = static_cast<GJGameLevel*>(
-                                        storedLvls->objectAtIndex(si))) {
-                                    if (lvl->m_levelID == levelId &&
-                                        self->m_sections[idx].levelCell) {
-                                        self->m_sections[idx].levelCell->loadFromLevel(lvl);
-                                        if (self->m_sections[idx].playSpinner)
-                                            self->m_sections[idx].playSpinner->setVisible(false);
-                                    } else if (lvl->m_levelID == platLevelId &&
-                                               self->m_sections[idx].platLevelCell) {
-                                        self->m_sections[idx].platLevelCell->loadFromLevel(lvl);
-                                        if (self->m_sections[idx].platPlaySpinner)
-                                            self->m_sections[idx].platPlaySpinner->setVisible(
-                                                false);
-                                    }
-                                }
-                            }
-                        } else {
-                            self->m_sections[idx].pendingKey = combinedKey;
-                            self->m_sections[idx].pendingLevelId = levelId;
-                            self->m_sections[idx].pendingPlatKey = combinedKey;
-                            self->m_sections[idx].pendingPlatLevelId = platLevelId;
-                            if (self->m_sections[idx].playSpinner)
-                                self->m_sections[idx].playSpinner->setVisible(true);
-                            if (self->m_sections[idx].platPlaySpinner)
-                                self->m_sections[idx].platPlaySpinner->setVisible(true);
-                            glm->getOnlineLevels(combinedSearchObj);
-                        }
-                    } else {
-                        auto storedLvls = glm->getStoredOnlineLevels(mainKey.c_str());
-                        if (storedLvls && storedLvls->count() > 0) {
+                    // check cache for combined key
+                    auto storedLvls = glm->getStoredOnlineLevels(combinedKey.c_str());
+                    if (storedLvls && storedLvls->count() > 0) {
+                        // iterate through returned levels and populate matching cells
+                        for (unsigned int si = 0; si < storedLvls->count(); ++si) {
                             if (auto lvl = static_cast<GJGameLevel*>(
-                                    storedLvls->objectAtIndex(0))) {
-                                if (self->m_sections[idx].levelCell) {
+                                    storedLvls->objectAtIndex(si))) {
+                                if (lvl->m_levelID == levelId &&
+                                    self->m_sections[idx].levelCell) {
                                     self->m_sections[idx].levelCell->loadFromLevel(lvl);
                                     if (self->m_sections[idx].playSpinner)
                                         self->m_sections[idx].playSpinner->setVisible(false);
-                                    if (self->m_sections[idx].levelCell->m_mainMenu) {
-                                        self->m_sections[idx].levelCell->m_mainMenu->setPosition(
-                                            {0, 0});
-                                        auto viewButton =
+                                } else if (lvl->m_levelID == platLevelId &&
+                                           self->m_sections[idx].platLevelCell) {
+                                    self->m_sections[idx].platLevelCell->loadFromLevel(lvl);
+                                    if (self->m_sections[idx].platPlaySpinner)
+                                        self->m_sections[idx].platPlaySpinner->setVisible(
+                                            false);
+                                }
+                            }
+                        }
+                    } else {
+                        self->m_sections[idx].pendingKey = combinedKey;
+                        self->m_sections[idx].pendingLevelId = levelId;
+                        self->m_sections[idx].pendingPlatKey = combinedKey;
+                        self->m_sections[idx].pendingPlatLevelId = platLevelId;
+                        if (self->m_sections[idx].playSpinner)
+                            self->m_sections[idx].playSpinner->setVisible(true);
+                        if (self->m_sections[idx].platPlaySpinner)
+                            self->m_sections[idx].platPlaySpinner->setVisible(true);
+                        glm->getOnlineLevels(combinedSearchObj);
+                    }
+                } else {
+                    auto storedLvls = glm->getStoredOnlineLevels(mainKey.c_str());
+                    if (storedLvls && storedLvls->count() > 0) {
+                        if (auto lvl = static_cast<GJGameLevel*>(
+                                storedLvls->objectAtIndex(0))) {
+                            if (self->m_sections[idx].levelCell) {
+                                self->m_sections[idx].levelCell->loadFromLevel(lvl);
+                                if (self->m_sections[idx].playSpinner)
+                                    self->m_sections[idx].playSpinner->setVisible(false);
+                                if (self->m_sections[idx].levelCell->m_mainMenu) {
+                                    self->m_sections[idx].levelCell->m_mainMenu->setPosition(
+                                        {0, 0});
+                                    auto viewButton =
+                                        self->m_sections[idx]
+                                            .levelCell->m_mainMenu->getChildByID(
+                                                "view-button");
+                                    auto creatorButton =
+                                        self->m_sections[idx]
+                                            .levelCell->m_mainMenu->getChildByID(
+                                                "creator-name");
+                                    creatorButton->setPosition({50, 54});
+                                    creatorButton->setAnchorPoint({0.f, 0.5f});
+                                    viewButton->setPosition(
+                                        {self->m_sections[idx]
+                                                .levelCell->getContentSize()
+                                                .width,
                                             self->m_sections[idx]
-                                                .levelCell->m_mainMenu->getChildByID(
-                                                    "view-button");
-                                        auto creatorButton =
-                                            self->m_sections[idx]
-                                                .levelCell->m_mainMenu->getChildByID(
-                                                    "creator-name");
-                                        creatorButton->setPosition({50, 54});
-                                        creatorButton->setAnchorPoint({0.f, 0.5f});
-                                        viewButton->setPosition(
-                                            {self->m_sections[idx]
                                                     .levelCell->getContentSize()
-                                                    .width,
-                                                self->m_sections[idx]
-                                                        .levelCell->getContentSize()
-                                                        .height /
-                                                    2.f});
+                                                    .height /
+                                                2.f});
+                                }
+                            }
+                        }
+                    } else {
+                        // Level not cached, request it from server
+                        self->m_sections[idx].pendingKey = mainKey;
+                        self->m_sections[idx].pendingLevelId = levelId;
+                        if (self->m_sections[idx].playSpinner)
+                            self->m_sections[idx].playSpinner->setVisible(true);
+                        glm->getOnlineLevels(mainSearchObj);
+                    }
+                }
+            }
+
+            if (!sec || !sec->container)
+                return;
+
+            // platformer support: check for dailyPlat/weeklyPlat/monthlyPlat
+            // variant
+            std::string platKey = key + "Plat";
+            if (json.contains(platKey)) {
+                auto pobj = json[platKey];
+                auto platLevelVal = pobj["levelId"].as<int>();
+                if (platLevelVal) {
+                    int platLevelId = platLevelVal.unwrap();
+                    sec->platLevelId = platLevelId;
+                    sec->platSecondsLeft =
+                        pobj["secondsLeft"].as<int>().unwrapOrDefault();
+
+                    // populate platform LevelCell from cache if available
+                    if (auto glm = GameLevelManager::sharedState()) {
+                        auto platSearchObj = GJSearchObject::create(
+                            SearchType::Search, fmt::format("{}", platLevelId));
+                        auto platKey = std::string(platSearchObj->getKey());
+                        auto storedLvls = glm->getStoredOnlineLevels(platKey.c_str());
+                        // try to find the exact plat level in the stored results (may
+                        // contain multiple entries)
+                        GJGameLevel* platMatch = nullptr;
+                        if (storedLvls && storedLvls->count() > 0) {
+                            for (unsigned int si = 0; si < storedLvls->count(); ++si) {
+                                if (auto cand = static_cast<GJGameLevel*>(
+                                        storedLvls->objectAtIndex(si))) {
+                                    if (cand->m_levelID == platLevelId) {
+                                        platMatch = cand;
+                                        break;
                                     }
+                                }
+                            }
+                        }
+
+                        if (platMatch) {
+                            if (sec->platLevelCell) {
+                                sec->platLevelCell->loadFromLevel(platMatch);
+                                // ensure platformer spinner is hidden after load
+                                if (sec->platPlaySpinner)
+                                    sec->platPlaySpinner->setVisible(false);
+                                // Position m_mainMenu after level is loaded
+                                if (sec->platLevelCell->m_mainMenu) {
+                                    sec->platLevelCell->m_mainMenu->setPosition({0, 0});
+                                    auto viewButton =
+                                        sec->platLevelCell->m_mainMenu->getChildByID(
+                                            "view-button");
+                                    auto creatorButton =
+                                        sec->platLevelCell->m_mainMenu->getChildByID(
+                                            "creator-name");
+                                    creatorButton->setPosition({50, 54});
+                                    creatorButton->setAnchorPoint({0.f, 0.5f});
+                                    viewButton->setPosition(
+                                        {sec->platLevelCell->getContentSize().width,
+                                            sec->platLevelCell->getContentSize().height / 2.f});
                                 }
                             }
                         } else {
-                            // Level not cached, request it from server
-                            self->m_sections[idx].pendingKey = mainKey;
-                            self->m_sections[idx].pendingLevelId = levelId;
-                            if (self->m_sections[idx].playSpinner)
-                                self->m_sections[idx].playSpinner->setVisible(true);
-                            glm->getOnlineLevels(mainSearchObj);
+                            // not cached — request and show spinner
+                            sec->pendingPlatKey = platKey;
+                            sec->pendingPlatLevelId = platLevelId;
+                            if (sec->platPlaySpinner)
+                                sec->platPlaySpinner->setVisible(true);
+                            glm->getOnlineLevels(platSearchObj);
                         }
                     }
                 }
+                std::vector<std::string> classicPrefixes = {
+                    "Next Daily Classic in ", "Next Weekly Classic in ", "Next Monthly Classic in "};
+                std::vector<std::string> platPrefixes = {
+                    "Next Daily Platformer in ", "Next Weekly Platformer in ", "Next Monthly Platformer in "};
+                if (sec->timerLabel)
+                    sec->timerLabel->setString(
+                        (classicPrefixes[idx] +
+                            formatTime(static_cast<long>(sec->secondsLeft)))
+                            .c_str());
+                if (sec->platTimerLabel)
+                    sec->platTimerLabel->setString(
+                        (platPrefixes[idx] +
+                            formatTime(static_cast<long>(sec->platSecondsLeft)))
+                            .c_str());
+            };
+        });
 
-                if (!sec || !sec->container)
-                    return;
+    // funny animation
+    if (!CachedSettings::get()->disableMenuAnimation) {
+        m_mainLayer->setPositionX(winSize.width * -0.15f);
+        auto sequence = CCSequence::create(
+            CCEaseElasticOut::create(CCMoveTo::create(0.4f, {winSize.width * 0.5f, winSize.height / 2}), 0.85),
+            nullptr);
 
-                // platformer support: check for dailyPlat/weeklyPlat/monthlyPlat
-                // variant
-                std::string platKey = key + "Plat";
-                if (json.contains(platKey)) {
-                    auto pobj = json[platKey];
-                    auto platLevelVal = pobj["levelId"].as<int>();
-                    if (platLevelVal) {
-                        int platLevelId = platLevelVal.unwrap();
-                        sec->platLevelId = platLevelId;
-                        sec->platSecondsLeft =
-                            pobj["secondsLeft"].as<int>().unwrapOrDefault();
-
-                        // populate platform LevelCell from cache if available
-                        if (auto glm = GameLevelManager::sharedState()) {
-                            auto platSearchObj = GJSearchObject::create(
-                                SearchType::Search, fmt::format("{}", platLevelId));
-                            auto platKey = std::string(platSearchObj->getKey());
-                            auto storedLvls = glm->getStoredOnlineLevels(platKey.c_str());
-                            // try to find the exact plat level in the stored results (may
-                            // contain multiple entries)
-                            GJGameLevel* platMatch = nullptr;
-                            if (storedLvls && storedLvls->count() > 0) {
-                                for (unsigned int si = 0; si < storedLvls->count(); ++si) {
-                                    if (auto cand = static_cast<GJGameLevel*>(
-                                            storedLvls->objectAtIndex(si))) {
-                                        if (cand->m_levelID == platLevelId) {
-                                            platMatch = cand;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (platMatch) {
-                                if (sec->platLevelCell) {
-                                    sec->platLevelCell->loadFromLevel(platMatch);
-                                    // ensure platformer spinner is hidden after load
-                                    if (sec->platPlaySpinner)
-                                        sec->platPlaySpinner->setVisible(false);
-                                    // Position m_mainMenu after level is loaded
-                                    if (sec->platLevelCell->m_mainMenu) {
-                                        sec->platLevelCell->m_mainMenu->setPosition({0, 0});
-                                        auto viewButton =
-                                            sec->platLevelCell->m_mainMenu->getChildByID(
-                                                "view-button");
-                                        auto creatorButton =
-                                            sec->platLevelCell->m_mainMenu->getChildByID(
-                                                "creator-name");
-                                        creatorButton->setPosition({50, 54});
-                                        creatorButton->setAnchorPoint({0.f, 0.5f});
-                                        viewButton->setPosition(
-                                            {sec->platLevelCell->getContentSize().width,
-                                                sec->platLevelCell->getContentSize().height / 2.f});
-                                    }
-                                }
-                            } else {
-                                // not cached — request and show spinner
-                                sec->pendingPlatKey = platKey;
-                                sec->pendingPlatLevelId = platLevelId;
-                                if (sec->platPlaySpinner)
-                                    sec->platPlaySpinner->setVisible(true);
-                                glm->getOnlineLevels(platSearchObj);
-                            }
-                        }
-                    }
-                    std::vector<std::string> classicPrefixes = {
-                        "Next Daily Classic in ", "Next Weekly Classic in ", "Next Monthly Classic in "};
-                    std::vector<std::string> platPrefixes = {
-                        "Next Daily Platformer in ", "Next Weekly Platformer in ", "Next Monthly Platformer in "};
-                    if (sec->timerLabel)
-                        sec->timerLabel->setString(
-                            (classicPrefixes[idx] +
-                                formatTime(static_cast<long>(sec->secondsLeft)))
-                                .c_str());
-                    if (sec->platTimerLabel)
-                        sec->platTimerLabel->setString(
-                            (platPrefixes[idx] +
-                                formatTime(static_cast<long>(sec->platSecondsLeft)))
-                                .c_str());
-                };
-            });
-
-        // funny animation
-        if (!CachedSettings::get()->disableMenuAnimation) {
-            m_mainLayer->setPositionX(winSize.width * -0.15f);
-            auto sequence = CCSequence::create(
-                CCEaseElasticOut::create(CCMoveTo::create(0.4f, {winSize.width * 0.5f, winSize.height / 2}), 0.85),
-                nullptr);
-
-            m_mainLayer->runAction(sequence);
-        }
-
-        return true;
+        m_mainLayer->runAction(sequence);
     }
+
+    return true;
 }
 
 void RLEventLayouts::onInfo(CCObject* sender) {
@@ -627,9 +613,7 @@ static std::string formatTime(long seconds) {
     seconds %= 3600;
     long minutes = seconds / 60;
     seconds %= 60;
-    char buf[64];
-    sprintf(buf, "%02ld:%02ld:%02ld:%02ld", days, hours, minutes, seconds);
-    return std::string(buf);
+    return fmt::format("{:02d}:{:02d}:{:02d}:{:02d}", days, hours, minutes, seconds);
 }
 
 void RLEventLayouts::onSafeButton(CCObject* sender) {

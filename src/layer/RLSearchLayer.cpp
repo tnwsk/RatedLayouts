@@ -533,8 +533,6 @@ void RLSearchLayer::onRandomButton(CCObject* sender) {
     m_searchTask.spawn(
         web::WebRequest().get(url.c_str()),
         [self, item](web::WebResponse const& res) {
-            if (!self)
-                return;
             if (item) {
                 item->setEnabled(true);
                 item->setOpacity(255);

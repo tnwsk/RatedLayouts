@@ -1,10 +1,11 @@
 #pragma once
 
+#include <vector>
 #include <Geode/Geode.hpp>
 #include <Geode/ui/MDTextArea.hpp>
 #include <Geode/utils/async.hpp>
 #include <cue/ListNode.hpp>
-#include <vector>
+#include <matjson.hpp>
 
 using namespace geode::prelude;
 
@@ -32,5 +33,5 @@ private:
     MDTextArea* m_bodyText = nullptr;
     cue::ListNode* m_listNode = nullptr;
     std::vector<AnnouncementEntry> m_announcements;
-    geode::async::TaskHolder<geode::utils::web::WebResponse> m_fetchTask;
+    geode::async::TaskHolder<Result<matjson::Value>> m_fetchTask;
 };

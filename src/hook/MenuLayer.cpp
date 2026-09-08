@@ -39,7 +39,7 @@ class $modify(RLHookMenuLayer, MenuLayer) {
     }
 
     void onRatedLayoutLayer(CCObject* sender) {
-        if (GJAccountManager::sharedState()->m_accountID == 0) {
+        if (GJAccountManager::sharedState()->m_accountID <= 0) {
             FLAlertLayer::create(
                 "Rated Layouts",
                 "You must be <cg>logged in</c> to access this feature in <cl>Rated Layouts.</c>",

@@ -5,6 +5,9 @@
 #include "popup/RLBadgeRequestPopup.hpp"
 #include "RLConstants.hpp"
 #include "RLNetworkUtils.hpp"
+#include "utils/CachedSettings.hpp"
+#include "utils/RLArgon.hpp"
+#include "utils/RLData.hpp"
 
 #include <cstdlib>
 #include <ctime>
@@ -12,7 +15,10 @@
 using namespace geode::prelude;
 using namespace rl;
 
-const std::string badgeParticle = "20,2065,2,225,3,165,145,20a-1a2a0.3a8a90a180a15a0a5a5a0a0a0a0a0a0a10a1a0a0a0.768627a0a0.219608a0a0.768627a0a1a0a1a1a0a0a1a0a0.415686a0a0.996078a0a1a0a0.25a0a1a0a0a0a0a0a0a0a0a2a1a0a0a1a21a0a0a0a0a0a0a0a0a0a0a0a0a0a0;";
+const std::string badgeParticle =
+    "20,2065,2,225,3,165,145,20a-1a2a0.3a8a90a180a15a0a5a5a0a0a0a0a0a0a10a1a0a0a0.768627a0a0.219608a0a0."
+    "768627a0a1a0a1a1a0a0a1a0a0.415686a0a0.996078a0a1a0a0."
+    "25a0a1a0a0a0a0a0a0a0a0a2a1a0a0a1a21a0a0a0a0a0a0a0a0a0a0a0a0a0a0;";
 
 RLDonationPopup* RLDonationPopup::create() {
     auto ret = new RLDonationPopup();
@@ -27,8 +33,7 @@ RLDonationPopup* RLDonationPopup::create() {
 };
 
 bool RLDonationPopup::init() {
-    if (!Popup::init(440.f, 280.f, "GJ_square07.png"))
-        return false;
+    if (!Popup::init(440.f, 280.f, "GJ_square07.png")) return false;
 
     const float mainLayerWidthSpacing = m_mainLayer->getContentSize().width - 25.f;
 
@@ -49,7 +54,8 @@ bool RLDonationPopup::init() {
     auto borderSprite = NineSlice::create("square02b_001.png");
     borderSprite->setContentSize({m_mainLayer->getScaledContentSize()});
     borderSprite->setColor({140, 0, 140});
-    borderSprite->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height / 2.f});
+    borderSprite->setPosition(
+        {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height / 2.f});
     m_mainLayer->addChild(borderSprite, -2);
 
     // glow bg
@@ -65,32 +71,31 @@ bool RLDonationPopup::init() {
     auto titleLabel = CCLabelBMFont::create("Support Rated Layouts!", "bigFont.fnt");
     titleLabel->setScale(0.75f);
     titleLabel->setColor({255, 148, 255});
-    titleLabel->setPosition({m_mainLayer->getScaledContentSize().width / 2.f + 20.f, m_mainLayer->getScaledContentSize().height - 30.f});
+    titleLabel->setPosition(
+        {m_mainLayer->getScaledContentSize().width / 2.f + 20.f, m_mainLayer->getScaledContentSize().height - 30.f});
     m_mainLayer->addChild(titleLabel);
 
     // supporter badge next to title
     auto badgeSpr = CCSprite::createWithSpriteFrameName("RL_badgeSupporter.png"_spr);
     badgeSpr->setScale(1.5f);
     badgeSpr->setRotation(-20.f);
-    badgeSpr->setPosition({titleLabel->getPositionX() - titleLabel->getContentSize().width * 0.75f / 2 - 30.f, titleLabel->getPositionY()});
+    badgeSpr->setPosition({titleLabel->getPositionX() - titleLabel->getContentSize().width * 0.75f / 2 - 30.f,
+                           titleLabel->getPositionY()});
     m_mainLayer->addChild(badgeSpr);
 
     // remove any existing particles on this coin to avoid dupes
     const std::string& pStruct = badgeParticle;
     if (!pStruct.empty()) {
-        if (auto existingP =
-                badgeSpr->getChildByID("rating-particles")) {
+        if (auto existingP = badgeSpr->getChildByID("rating-particles")) {
             existingP->removeFromParent();
         }
         ParticleStruct pStruct;
         GameToolbox::particleStringToStruct(badgeParticle, pStruct);
-        CCParticleSystemQuad* particle =
-            GameToolbox::particleFromStruct(pStruct, nullptr, false);
+        CCParticleSystemQuad* particle = GameToolbox::particleFromStruct(pStruct, nullptr, false);
         if (particle) {
             badgeSpr->addChild(particle, -1);
             particle->resetSystem();
-            particle->setPosition(badgeSpr->getContentSize() /
-                                  2.f);
+            particle->setPosition(badgeSpr->getContentSize() / 2.f);
             particle->setID("rating-particles"_spr);
             particle->updateWithNoTime();
         }
@@ -99,38 +104,49 @@ bool RLDonationPopup::init() {
     // title1
     auto heading1 = CCLabelBMFont::create("Get a Supporter Badge!", "goldFont.fnt");
     heading1->limitLabelWidth(mainLayerWidthSpacing, 0.75f, 0.7f);
-    heading1->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 60.f});
+    heading1->setPosition(
+        {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 60.f});
     m_mainLayer->addChild(heading1);
 
     // desc1
-    auto desc1 = CCLabelBMFont::create("Get a special badge shown to\nall players and a colored comment within Rated Layouts!", "bigFont.fnt");
+    auto desc1 = CCLabelBMFont::create(
+        "Get a special badge shown to\nall players and a colored comment within Rated Layouts!", "bigFont.fnt");
     desc1->limitLabelWidth(mainLayerWidthSpacing, 0.5f, 0.3f);
-    desc1->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 90.f});
+    desc1->setPosition(
+        {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 90.f});
     desc1->setAlignment(kCCTextAlignmentCenter);
     m_mainLayer->addChild(desc1);
 
     // title2
     auto heading2 = CCLabelBMFont::create("Get Exclusive Features", "goldFont.fnt");
     heading2->limitLabelWidth(mainLayerWidthSpacing, 0.75f, 0.7f);
-    heading2->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 125.f});
+    heading2->setPosition(
+        {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 125.f});
     m_mainLayer->addChild(heading2);
     // desc2
-    auto desc2 = CCLabelBMFont::create("Access exclusive and up-coming features added in Rated Layouts.\nAnd get early access to these new features!", "bigFont.fnt");
+    auto desc2 = CCLabelBMFont::create(
+        "Access exclusive and up-coming features added in Rated Layouts.\nAnd get early access to these new features!",
+        "bigFont.fnt");
     desc2->limitLabelWidth(mainLayerWidthSpacing, 0.5f, 0.3f);
-    desc2->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 155.f});
+    desc2->setPosition(
+        {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 155.f});
     desc2->setAlignment(kCCTextAlignmentCenter);
     m_mainLayer->addChild(desc2);
 
     // title3
     auto heading3 = CCLabelBMFont::create("Priority Layout Requests", "goldFont.fnt");
     heading3->limitLabelWidth(mainLayerWidthSpacing, 0.75f, 0.7f);
-    heading3->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 190.f});
+    heading3->setPosition(
+        {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 190.f});
     m_mainLayer->addChild(heading3);
 
     // desc3
-    auto desc3 = CCLabelBMFont::create("Request priority consideration for your layout\nsubmissions and get faster review from the team.", "bigFont.fnt");
+    auto desc3 = CCLabelBMFont::create(
+        "Request priority consideration for your layout\nsubmissions and get faster review from the team.",
+        "bigFont.fnt");
     desc3->limitLabelWidth(mainLayerWidthSpacing, 0.5f, 0.3f);
-    desc3->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 220.f});
+    desc3->setPosition(
+        {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 220.f});
     desc3->setAlignment(kCCTextAlignmentCenter);
     m_mainLayer->addChild(desc3);
 
@@ -138,7 +154,8 @@ bool RLDonationPopup::init() {
     auto donoMenu = CCMenu::create();
     donoMenu->setPosition({m_mainLayer->getContentWidth() / 2.f, 20});
     donoMenu->setContentSize({m_mainLayer->getContentWidth() - 20.f, 40.f});
-    donoMenu->setLayout(RowLayout::create()->setGap(5.f)->setAxisAlignment(AxisAlignment::Center)->setAxisReverse(false));
+    donoMenu->setLayout(
+        RowLayout::create()->setGap(5.f)->setAxisAlignment(AxisAlignment::Center)->setAxisReverse(false));
     m_mainLayer->addChild(donoMenu);
 
     // badge request button
@@ -153,7 +170,11 @@ bool RLDonationPopup::init() {
 
     // request supporter features
     auto requestSpr = ButtonSprite::create("Request", "goldFont.fnt", "GJ_button_05.png");
-    auto requestBtn = CCMenuItemSpriteExtra::create(requestSpr, this, menu_selector(RLDonationPopup::onAccessBadge));  // same popup for now since we don't have a separate feature request system
+    auto requestBtn = CCMenuItemSpriteExtra::create(
+        requestSpr,
+        this,
+        menu_selector(RLDonationPopup::
+                          onAccessBadge));  // same popup for now since we don't have a separate feature request system
     donoMenu->addChild(requestBtn);
 
     donoMenu->updateLayout();
@@ -170,11 +191,13 @@ bool RLDonationPopup::init() {
     const float WIDTH_BOUND = 460.f;
     const float HEIGHT_BOUND = 270.f;
 
-    auto makeRain = [this, WIDTH_BOUND, HEIGHT_BOUND](CCSprite* spr, float minDur, float maxDur, float rotAmount, float alpha) {
+    auto makeRain = [this, WIDTH_BOUND, HEIGHT_BOUND](
+                        CCSprite* spr, float minDur, float maxDur, float rotAmount, float alpha) {
         float startX = spr->getPositionX();
         // add a randomized vertical offset so each block starts at a different height
         float rnd = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
-        float startY = HEIGHT_BOUND + spr->getContentSize().height * spr->getScale() + rnd * HEIGHT_BOUND;  // up to one extra bound above
+        float startY = HEIGHT_BOUND + spr->getContentSize().height * spr->getScale() +
+                       rnd * HEIGHT_BOUND;  // up to one extra bound above
         const float endY = -15.f;
         spr->setPosition({startX, startY});
         spr->setOpacity(static_cast<GLubyte>(alpha));
@@ -222,9 +245,7 @@ bool RLDonationPopup::init() {
     return true;
 }
 
-void RLDonationPopup::onClick(CCObject* sender) {
-    utils::web::openLinkInBrowser("https://ko-fi.com/arcticwoof");
-}
+void RLDonationPopup::onClick(CCObject* sender) { utils::web::openLinkInBrowser("https://ko-fi.com/arcticwoof"); }
 
 void RLDonationPopup::onGetBadge(CCObject* sender) {
     auto popup = RLBadgeRequestPopup::create();
@@ -236,10 +257,49 @@ void RLDonationPopup::onAccessBadge(CCObject* sender) {
     m_uploadPopup->show();
     // argon my beloved <3
     auto accountData = argon::getGameAccountData();
+    WeakRef<UploadActionPopup> popupRef = m_uploadPopup;
+    m_authTask.spawn(
+        "GetSupporterTask",
+        []() -> LocalEndpoint::ResFuture {
+            if (!RLArgon::hasToken()) {
+                co_await RLArgon::waitAsync();
+                if (RLArgon::failed()) co_return Err("Failed to get argon token.");
+            }
+            // Call out!
+            co_return co_await LocalEndpoint::getWithAuth("getAccessSupporter");
+        },
+        [popupRef](Result<matjson::Value> res) {
+            if (res.isErr()) {
+                log::warn("Donation failed: {}", res.unwrapErr());
+                if (auto popup = popupRef.lock()) popup->showFailMessage(std::move(res).unwrapErr());
+                return;
+            }
 
+            auto json = std::move(res).unwrap();
+            auto CS = CachedSettings::update();
+            auto& data = CS->userData;
+            data.isSupporter = json["isSupporter"].asBool().unwrapOrDefault();
+            data.isBooster = json["isBooster"].asBool().unwrapOrDefault();
+
+            if (data.hasSupporterFeatures()) {
+                log::info("Granted Supporter Features");
+                if (auto popup = popupRef.lock()) popup->showSuccessMessage("Granted Supporter Features.");
+            } else if (auto popup = popupRef.lock()) {
+                popup->showFailMessage("You are not a Supporter or Booster.");
+            }
+        });
+}
+
+#if 0
+void RLDonationPopup::onAccessBadge(CCObject* sender) {
+    m_uploadPopup = UploadActionPopup::create(nullptr, "Requesting Access...");
+    m_uploadPopup->show();
+    // argon my beloved <3
+    auto accountData = argon::getGameAccountData();
+    Ref<RLDonationPopup> self = this; 
     m_authTask.spawn(
         argon::startAuth(std::move(accountData)),
-        [this](Result<std::string> res) {
+        [self](Result<std::string> res) {
             if (res.isOk()) {
                 auto token = std::move(res).unwrap();
                 log::info("token obtained: {}", token);
@@ -254,13 +314,11 @@ void RLDonationPopup::onAccessBadge(CCObject* sender) {
                 auto postReq = web::WebRequest();
                 postReq.bodyJSON(jsonBody);
 
-                Ref<RLDonationPopup> self = this;
                 Ref<UploadActionPopup> popupRef = m_uploadPopup;
                 m_getAccessTask.spawn(
                     postReq.post(std::string(rl::BASE_API_URL) + "/getAccessSupporter"),
                     [self, popupRef](web::WebResponse response) {
-                        if (!self || !popupRef) return;
-                        log::info("Received response from server");
+                        log::trace("onAccessBadge: Received response from server");
                         if (!response.ok()) {
                             log::warn("Server returned non-ok status: {}",
                                 response.code());
@@ -301,3 +359,4 @@ void RLDonationPopup::onAccessBadge(CCObject* sender) {
             }
         });
 };
+#endif

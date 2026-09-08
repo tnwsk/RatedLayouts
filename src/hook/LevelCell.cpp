@@ -3,6 +3,8 @@
 #include "RLLevelInfo.hpp"
 #include "RLNetworkUtils.hpp"
 #include "utils/CachedSettings.hpp"
+#include "utils/RLArgon.hpp"
+#include "utils/RLData.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/modify/LevelCell.hpp>
 #include <Geode/utils/async.hpp>
@@ -18,12 +20,28 @@ class $modify(RLLevelCell, LevelCell) {
         bool m_isRejected = false;
         bool m_previouslyRejected = false;
         int m_difficulty = false;
-        async::TaskHolder<web::WebResponse> m_fetchTask;
+        async::TaskHolder<Result<matjson::Value>> m_fetchTask;
         int m_waitRetries = 0;  // used for waiting for level data to arrive
         bool m_coinOffsetApplied = false;
         bool m_iconOffsetApplied = false;
         ~Fields() { m_fetchTask.cancel(); }
     };
+
+    bool init() {
+        if (!LevelCell::init()) return false;
+        // i only want it for rl level browser, lol
+        if (auto scene = CCDirector::sharedDirector()->getRunningScene()) {
+            auto children = scene->getChildren();
+            if (children && children->count() > 0) {
+                auto first = children->objectAtIndex(0);
+                if (first && typeinfo_cast<RLLevelBrowserLayer*>(first)) {
+                    this->m_compactView = CachedSettings::get()->isCompact;
+                    return true;
+                }
+            }
+        }
+        return true;
+    }
 
     void updateRejectedCellLabel() {
         if (!m_backgroundLayer) {
@@ -42,19 +60,21 @@ class $modify(RLLevelCell, LevelCell) {
             }
 
             CCLabelBMFont* rejectedLabel = nullptr;
-            if (this->m_fields->m_isRejected && !this->m_fields->m_previouslyRejected) rejectedLabel = CCLabelBMFont::create("RL Rejected", "bigFont.fnt");
-            if (this->m_fields->m_previouslyRejected && !this->m_fields->m_isRejected) rejectedLabel = CCLabelBMFont::create("RL Previously Rejected", "bigFont.fnt");
+            if (this->m_fields->m_isRejected && !this->m_fields->m_previouslyRejected)
+                rejectedLabel = CCLabelBMFont::create("RL Rejected", "bigFont.fnt");
+            if (this->m_fields->m_previouslyRejected && !this->m_fields->m_isRejected)
+                rejectedLabel = CCLabelBMFont::create("RL Previously Rejected", "bigFont.fnt");
             auto icon = CCSprite::createWithSpriteFrameName("RL_cross_no_box.png"_spr);
 
             if (!CachedSettings::get()->disableRejectedLayoutsGlow && m_fields->m_isRejected) {
-                auto glow = CCLayerGradient::create({255, 40, 40, 80}, {220, 40, 40, 0}, {-1.f, 1.f});
+                auto glow =
+                    CCLayerGradient::create({255, 40, 40, 80}, {220, 40, 40, 0}, {-1.f, 1.f});
                 glow->setID("rl-rejected-glow");
                 glow->changeWidthAndHeight(m_width, m_height);
                 m_backgroundLayer->addChild(glow, 1);
             }
             if (rejectedLabel) {
-                rejectedLabel->setPosition(
-                    {m_backgroundLayer->getContentSize().width - 7.f, 5.f});
+                rejectedLabel->setPosition({m_backgroundLayer->getContentSize().width - 7.f, 5.f});
                 if (this->m_fields->m_isRejected) rejectedLabel->setColor({255, 0, 0});
                 if (this->m_fields->m_previouslyRejected) rejectedLabel->setColor({255, 100, 100});
                 rejectedLabel->setScale(0.25f);
@@ -69,8 +89,12 @@ class $modify(RLLevelCell, LevelCell) {
                     icon->setScale(0.35f);
                     icon->setOpacity(152);
                     icon->setAnchorPoint({1.f, 0.5f});
-                    icon->setPosition({rejectedLabel->getPositionX() - rejectedLabel->getContentSize().width * rejectedLabel->getScale() - 3.f,
-                        rejectedLabel->getPositionY() + rejectedLabel->getContentSize().height * rejectedLabel->getScale() / 2.f});
+                    icon->setPosition(
+                        {rejectedLabel->getPositionX() -
+                             rejectedLabel->getContentSize().width * rejectedLabel->getScale() -
+                             3.f,
+                         rejectedLabel->getPositionY() + rejectedLabel->getContentSize().height *
+                                                             rejectedLabel->getScale() / 2.f});
                     m_backgroundLayer->addChild(icon, 10);
                 }
 
@@ -80,8 +104,12 @@ class $modify(RLLevelCell, LevelCell) {
                     rejectedLabel->setScale(0.2f);
                     icon->setScale(0.28f);
 
-                    icon->setPosition({rejectedLabel->getPositionX() - rejectedLabel->getContentSize().width * rejectedLabel->getScale() - 3.f,
-                        rejectedLabel->getPositionY() + rejectedLabel->getContentSize().height * rejectedLabel->getScale() / 2.f});
+                    icon->setPosition(
+                        {rejectedLabel->getPositionX() -
+                             rejectedLabel->getContentSize().width * rejectedLabel->getScale() -
+                             3.f,
+                         rejectedLabel->getPositionY() + rejectedLabel->getContentSize().height *
+                                                             rejectedLabel->getScale() / 2.f});
                 }
             }
         }
@@ -140,7 +168,7 @@ class $modify(RLLevelCell, LevelCell) {
         int score = json["featuredScore"].asInt().unwrapOrDefault();
         bool isRated = json["rated"].asBool().unwrapOrDefault();
 
-        log::debug("difficulty: {}, featured: {}, score: {}", difficulty, featured, score);
+        log::trace("level[{}]: difficulty: {}, featured: {}, score: {}", levelId, difficulty, featured, score);
         m_fields->m_difficulty = difficulty;
 
         // If no difficulty rating, still show rejected state when applicable
@@ -152,107 +180,51 @@ class $modify(RLLevelCell, LevelCell) {
         // Map difficulty
         int difficultyLevel = 0;
         switch (difficulty) {
-            case 1:
-                difficultyLevel = -1;
-                break;
-            case 2:
-                difficultyLevel = 1;
-                break;
-            case 3:
-                difficultyLevel = 2;
-                break;
-            case 4:
-            case 5:
-                difficultyLevel = 3;
-                break;
-            case 6:
-            case 7:
-                difficultyLevel = 4;
-                break;
-            case 8:
-            case 9:
-                difficultyLevel = 5;
-                break;
-            case 10:
-                difficultyLevel = 7;
-                break;
-            case 15:
-                difficultyLevel = 8;
-                break;
-            case 20:
-                difficultyLevel = 6;
-                break;
-            case 25:
-                difficultyLevel = 9;
-                break;
-            case 30:
-                difficultyLevel = 10;
-                break;
-            default:
-                difficultyLevel = 0;
-                break;
+        case 1: difficultyLevel = -1; break;
+        case 2: difficultyLevel = 1; break;
+        case 3: difficultyLevel = 2; break;
+        case 4:
+        case 5: difficultyLevel = 3; break;
+        case 6:
+        case 7: difficultyLevel = 4; break;
+        case 8:
+        case 9: difficultyLevel = 5; break;
+        case 10: difficultyLevel = 7; break;
+        case 15: difficultyLevel = 8; break;
+        case 20: difficultyLevel = 6; break;
+        case 25: difficultyLevel = 9; break;
+        case 30: difficultyLevel = 10; break;
+        default: difficultyLevel = 0; break;
         }
 
         // calculate the ruby value based on difficulty
         int rubyInitValue = 0;
         switch (difficulty) {
-            case 1:
-                rubyInitValue = 0;
-                break;
-            case 2:
-                rubyInitValue = 50;
-                break;
-            case 3:
-                rubyInitValue = 100;
-                break;
-            case 4:
-                rubyInitValue = 175;
-                break;
-            case 5:
-                rubyInitValue = 175;
-                break;
-            case 6:
-                rubyInitValue = 250;
-                break;
-            case 7:
-                rubyInitValue = 250;
-                break;
-            case 8:
-                rubyInitValue = 350;
-                break;
-            case 9:
-                rubyInitValue = 350;
-                break;
-            case 10:
-                rubyInitValue = 500;
-                break;
-            case 15:
-                rubyInitValue = 625;
-                break;
-            case 20:
-                rubyInitValue = 750;
-                break;
-            case 25:
-                rubyInitValue = 875;
-                break;
-            case 30:
-                rubyInitValue = 1000;
-                break;
-            default:
-                rubyInitValue = 0;
-                break;
+        case 1: rubyInitValue = 0; break;
+        case 2: rubyInitValue = 50; break;
+        case 3: rubyInitValue = 100; break;
+        case 4: rubyInitValue = 175; break;
+        case 5: rubyInitValue = 175; break;
+        case 6: rubyInitValue = 250; break;
+        case 7: rubyInitValue = 250; break;
+        case 8: rubyInitValue = 350; break;
+        case 9: rubyInitValue = 350; break;
+        case 10: rubyInitValue = 500; break;
+        case 15: rubyInitValue = 625; break;
+        case 20: rubyInitValue = 750; break;
+        case 25: rubyInitValue = 875; break;
+        case 30: rubyInitValue = 1000; break;
+        default: rubyInitValue = 0; break;
         }
 
         // update  difficulty sprite
-        auto difficultyContainer =
-            m_mainLayer->getChildByID("difficulty-container");
+        auto difficultyContainer = m_mainLayer->getChildByID("difficulty-container");
         if (!difficultyContainer) {
             log::warn("difficulty-container not found");  // womp womp
             return;
         }
 
-        auto difficultySprite =
-            difficultyContainer->getChildByID("difficulty-sprite");
+        auto difficultySprite = difficultyContainer->getChildByID("difficulty-sprite");
         if (!difficultySprite) {
             log::warn("difficulty-sprite not found");
             return;
@@ -303,10 +275,8 @@ class $modify(RLLevelCell, LevelCell) {
             existingRubyLabel->removeFromParent();
 
         // add the ruby icon
-        CCSprite* rubyIcon =
-            CCSprite::createWithSpriteFrameName("RL_rubySmall.png"_spr);
-        rubyIcon->setPosition(
-            {likesIcon->getPositionX() + 45.f, likesIcon->getPositionY()});
+        CCSprite* rubyIcon = CCSprite::createWithSpriteFrameName("RL_rubySmall.png"_spr);
+        rubyIcon->setPosition({likesIcon->getPositionX() + 45.f, likesIcon->getPositionY()});
         rubyIcon->setID("ruby-icon");
         m_mainLayer->addChild(rubyIcon);
 
@@ -315,8 +285,7 @@ class $modify(RLLevelCell, LevelCell) {
         bool isCompleted = false;
         if (this->m_level) {
             int lvlId = static_cast<int>(this->m_level->m_levelID);
-            isCompleted =
-                GameStatsManager::sharedState()->hasCompletedLevel(this->m_level);
+            isCompleted = GameStatsManager::sharedState()->hasCompletedLevel(this->m_level);
             if (isCompleted) {
                 // completed: show full value
                 collected = rubyInitValue;
@@ -327,23 +296,20 @@ class $modify(RLLevelCell, LevelCell) {
                 // getNormalPercent()? i want you to try do that and see what percentage
                 // or value it returns? did it says 0 even though you have made some
                 // percent progress? no clue why it does that :/
-                if (auto pctNode =
-                        this->m_mainLayer->getChildByID("percentage-label")) {
+                if (auto pctNode = this->m_mainLayer->getChildByID("percentage-label")) {
                     // so i just did the hacky way and take the label and use the value of
                     // that instead
                     auto pctLabel = static_cast<CCLabelBMFont*>(pctNode);
                     std::string s = pctLabel->getString();
                     std::string digits;
                     for (char ch : s) {
-                        if (std::isdigit(static_cast<unsigned char>(ch)))
-                            digits.push_back(ch);
+                        if (std::isdigit(static_cast<unsigned char>(ch))) digits.push_back(ch);
                     }
                     if (!digits.empty()) {
                         percentage = numFromString<int>(digits).unwrapOrDefault();
                     } else {
-                        percentage = this->m_level
-                                         ? this->m_level->m_normalPercent
-                                         : 0;  // ts always returns 0 for some reason
+                        percentage = this->m_level ? this->m_level->m_normalPercent
+                                                   : 0;  // ts always returns 0 for some reason
                     }
                 } else {
                     percentage = this->m_level ? this->m_level->m_normalPercent
@@ -353,14 +319,12 @@ class $modify(RLLevelCell, LevelCell) {
                 double calcAtPercent = static_cast<double>(rubyInitValue) * 0.8 *
                                        (static_cast<double>(percentage) / 100.0);
                 collected = static_cast<int>(std::lround(calcAtPercent));
-                if (collected > rubyInitValue)
-                    collected = rubyInitValue;
+                if (collected > rubyInitValue) collected = rubyInitValue;
             }
         }
 
         if (rubyIcon) {
-            std::string labelStr =
-                numToString(collected) + "/" + numToString(rubyInitValue);
+            std::string labelStr = numToString(collected) + "/" + numToString(rubyInitValue);
             auto rubyLabel = CCLabelBMFont::create(labelStr.c_str(), "bigFont.fnt");
             rubyLabel->setPosition(
                 {rubyIcon->getPositionX() + 10.f, rubyIcon->getPositionY() - 1.f});
@@ -381,17 +345,14 @@ class $modify(RLLevelCell, LevelCell) {
 
         // featured score label
         if (score > 0 && featured > 0) {
-            auto existingScoreLabel =
-                m_backgroundLayer->getChildByID("featured-score-label");
+            auto existingScoreLabel = m_backgroundLayer->getChildByID("featured-score-label");
             if (existingScoreLabel) {
                 existingScoreLabel->removeFromParent();
             }
             auto scoreLabel = CCLabelBMFont::create(
-                std::string("RL Score: " + numToString(score)).c_str(),
-                "bigFont.fnt");
+                std::string("RL Score: " + numToString(score)).c_str(), "bigFont.fnt");
             if (scoreLabel) {
-                scoreLabel->setPosition(
-                    {m_backgroundLayer->getContentSize().width - 7.f, 5.f});
+                scoreLabel->setPosition({m_backgroundLayer->getContentSize().width - 7.f, 5.f});
                 scoreLabel->setColor({150, 200, 255});
                 scoreLabel->setOpacity(152);
                 scoreLabel->setScale(0.25f);
@@ -401,8 +362,7 @@ class $modify(RLLevelCell, LevelCell) {
             }
 
             if (m_compactView) {
-                scoreLabel->setPosition(
-                    {m_backgroundLayer->getContentSize().width - 5.f, 2.f});
+                scoreLabel->setPosition({m_backgroundLayer->getContentSize().width - 5.f, 2.f});
                 scoreLabel->setScale(0.2f);
             }
         }
@@ -424,24 +384,20 @@ class $modify(RLLevelCell, LevelCell) {
         if (auto existingIcon = difficultySprite->getChildByID("rl-star-icon")) {
             existingIcon->removeFromParent();
         }
-        if (auto existingRewardLabel =
-                difficultySprite->getChildByID("rl-reward-label")) {
+        if (auto existingRewardLabel = difficultySprite->getChildByID("rl-reward-label")) {
             existingRewardLabel->removeFromParent();
         }
         CCSprite* newStarIcon = nullptr;
         // choose appropriate icon and grayscale when the rating uses greyed-out visuals
         if (this->m_level && this->m_level->isPlatformer()) {
-            newStarIcon =
-                CCSprite::createWithSpriteFrameName("RL_planetSmall.png"_spr);
-            if (!newStarIcon)
-                newStarIcon = CCSprite::create("RL_planetMed.png"_spr);
+            newStarIcon = CCSprite::createWithSpriteFrameName("RL_planetSmall.png"_spr);
+            if (!newStarIcon) newStarIcon = CCSprite::create("RL_planetMed.png"_spr);
         }
         if (!newStarIcon) {
             newStarIcon = CCSprite::createWithSpriteFrameName("RL_starSmall.png"_spr);
         }
         if (newStarIcon) {
-            newStarIcon->setPosition(
-                {difficultySprite->getContentSize().width / 2 + 8, -8});
+            newStarIcon->setPosition({difficultySprite->getContentSize().width / 2 + 8, -8});
             newStarIcon->setScale(0.75f);
             newStarIcon->setID("rl-star-icon");
             difficultySprite->addChild(newStarIcon);
@@ -458,9 +414,8 @@ class $modify(RLLevelCell, LevelCell) {
                 rewardLabelValue->setID("rl-reward-label");
                 difficultySprite->addChild(rewardLabelValue);
 
-                if (this->m_level &&
-                    GameStatsManager::sharedState()->hasCompletedOnlineLevel(
-                        this->m_level->m_levelID)) {
+                if (this->m_level && GameStatsManager::sharedState()->hasCompletedOnlineLevel(
+                                         this->m_level->m_levelID)) {
                     if (this->m_level->isPlatformer()) {
                         rewardLabelValue->setColor({255, 160, 0});  // orange for planets
                     } else {
@@ -473,47 +428,39 @@ class $modify(RLLevelCell, LevelCell) {
             // 2=epic, 3=legendary)
             {
                 auto featuredCoin = difficultySprite->getChildByID("featured-coin");
-                auto epicFeaturedCoin =
-                    difficultySprite->getChildByID("epic-featured-coin");
+                auto epicFeaturedCoin = difficultySprite->getChildByID("epic-featured-coin");
                 auto legendaryFeaturedCoin =
                     difficultySprite->getChildByID("legendary-featured-coin");
-                auto mythicFeaturedCoin =
-                    difficultySprite->getChildByID("mythic-featured-coin");
+                auto mythicFeaturedCoin = difficultySprite->getChildByID("mythic-featured-coin");
 
                 if (featured == 1) {
                     // remove other types
-                    if (epicFeaturedCoin)
-                        epicFeaturedCoin->removeFromParent();
-                    if (legendaryFeaturedCoin)
-                        legendaryFeaturedCoin->removeFromParent();
-                    if (mythicFeaturedCoin)
-                        mythicFeaturedCoin->removeFromParent();
+                    if (epicFeaturedCoin) epicFeaturedCoin->removeFromParent();
+                    if (legendaryFeaturedCoin) legendaryFeaturedCoin->removeFromParent();
+                    if (mythicFeaturedCoin) mythicFeaturedCoin->removeFromParent();
                     if (!featuredCoin) {
-                        auto newFeaturedCoin = CCSprite::createWithSpriteFrameName(
-                            "RL_featuredCoin.png"_spr);
+                        auto newFeaturedCoin =
+                            CCSprite::createWithSpriteFrameName("RL_featuredCoin.png"_spr);
                         if (newFeaturedCoin) {
                             newFeaturedCoin->setPosition(
                                 {difficultySprite->getContentSize().width / 2,
-                                    difficultySprite->getContentSize().height / 2});
+                                 difficultySprite->getContentSize().height / 2});
                             newFeaturedCoin->setID("featured-coin");
                             difficultySprite->addChild(newFeaturedCoin, -1);
                         }
                     }
                 } else if (featured == 2) {
                     // ensure only epic present
-                    if (featuredCoin)
-                        featuredCoin->removeFromParent();
-                    if (legendaryFeaturedCoin)
-                        legendaryFeaturedCoin->removeFromParent();
-                    if (mythicFeaturedCoin)
-                        mythicFeaturedCoin->removeFromParent();
+                    if (featuredCoin) featuredCoin->removeFromParent();
+                    if (legendaryFeaturedCoin) legendaryFeaturedCoin->removeFromParent();
+                    if (mythicFeaturedCoin) mythicFeaturedCoin->removeFromParent();
                     if (!epicFeaturedCoin) {
-                        auto newEpicCoin = CCSprite::createWithSpriteFrameName(
-                            "RL_epicFeaturedCoin.png"_spr);
+                        auto newEpicCoin =
+                            CCSprite::createWithSpriteFrameName("RL_epicFeaturedCoin.png"_spr);
                         if (newEpicCoin) {
                             newEpicCoin->setPosition(
                                 {difficultySprite->getContentSize().width / 2,
-                                    difficultySprite->getContentSize().height / 2});
+                                 difficultySprite->getContentSize().height / 2});
                             newEpicCoin->setID("epic-featured-coin");
                             difficultySprite->addChild(newEpicCoin, -1);
 
@@ -539,19 +486,16 @@ class $modify(RLLevelCell, LevelCell) {
                     }
                 } else if (featured == 3) {
                     // legendary
-                    if (featuredCoin)
-                        featuredCoin->removeFromParent();
-                    if (epicFeaturedCoin)
-                        epicFeaturedCoin->removeFromParent();
-                    if (mythicFeaturedCoin)
-                        mythicFeaturedCoin->removeFromParent();
+                    if (featuredCoin) featuredCoin->removeFromParent();
+                    if (epicFeaturedCoin) epicFeaturedCoin->removeFromParent();
+                    if (mythicFeaturedCoin) mythicFeaturedCoin->removeFromParent();
                     if (!legendaryFeaturedCoin) {
-                        auto newLegendaryCoin = CCSprite::createWithSpriteFrameName(
-                            "RL_legendaryFeaturedCoin.png"_spr);
+                        auto newLegendaryCoin =
+                            CCSprite::createWithSpriteFrameName("RL_legendaryFeaturedCoin.png"_spr);
                         if (newLegendaryCoin) {
                             newLegendaryCoin->setPosition(
                                 {difficultySprite->getContentSize().width / 2,
-                                    difficultySprite->getContentSize().height / 2});
+                                 difficultySprite->getContentSize().height / 2});
                             newLegendaryCoin->setID("legendary-featured-coin");
                             difficultySprite->addChild(newLegendaryCoin, -1);
 
@@ -570,8 +514,7 @@ class $modify(RLLevelCell, LevelCell) {
                                 if (particle) {
                                     newLegendaryCoin->addChild(particle, 1);
                                     particle->resetSystem();
-                                    particle->setPosition(newLegendaryCoin->getContentSize() /
-                                                          2.f);
+                                    particle->setPosition(newLegendaryCoin->getContentSize() / 2.f);
                                     particle->setID("rating-particles"_spr);
                                     particle->update(0.15f);
                                 }
@@ -579,12 +522,9 @@ class $modify(RLLevelCell, LevelCell) {
                         }
                     }
                 } else {
-                    if (featuredCoin)
-                        featuredCoin->removeFromParent();
-                    if (epicFeaturedCoin)
-                        epicFeaturedCoin->removeFromParent();
-                    if (legendaryFeaturedCoin)
-                        legendaryFeaturedCoin->removeFromParent();
+                    if (featuredCoin) featuredCoin->removeFromParent();
+                    if (epicFeaturedCoin) epicFeaturedCoin->removeFromParent();
+                    if (legendaryFeaturedCoin) legendaryFeaturedCoin->removeFromParent();
                 }
 
                 // ensure particles exist for existing epic/legendary/mythic coins (if
@@ -601,8 +541,7 @@ class $modify(RLLevelCell, LevelCell) {
                                 if (particle) {
                                     epicFeaturedCoin->addChild(particle, 1);
                                     particle->resetSystem();
-                                    particle->setPosition(epicFeaturedCoin->getContentSize() /
-                                                          2.f);
+                                    particle->setPosition(epicFeaturedCoin->getContentSize() / 2.f);
                                     particle->setID("rating-particles"_spr);
                                     particle->update(0.15f);
                                     particle->update(0.15f);
@@ -623,8 +562,8 @@ class $modify(RLLevelCell, LevelCell) {
                                 if (particle) {
                                     legendaryFeaturedCoin->addChild(particle, 1);
                                     particle->resetSystem();
-                                    particle->setPosition(
-                                        legendaryFeaturedCoin->getContentSize() / 2.f);
+                                    particle->setPosition(legendaryFeaturedCoin->getContentSize() /
+                                                          2.f);
                                     particle->setID("rating-particles"_spr);
                                     particle->update(0.15f);
                                     particle->update(0.15f);
@@ -658,8 +597,7 @@ class $modify(RLLevelCell, LevelCell) {
 
                     // push difficulty sprite down if coins exist in non-compact view
                     if ((coinIcon1 || coinIcon2 || coinIcon3) && !m_compactView) {
-                        difficultySprite->setPositionY(difficultySprite->getPositionY() +
-                                                       10);
+                        difficultySprite->setPositionY(difficultySprite->getPositionY() + 10);
                     }
 
                     // Replace or darken coins when level is not suggested
@@ -669,22 +607,21 @@ class $modify(RLLevelCell, LevelCell) {
                         GJGameLevel* levelPtr = this->m_level;
                         if (!levelPtr) {
                             auto glm = GameLevelManager::sharedState();
-                            auto stored = glm->getStoredOnlineLevels(
-                                fmt::format("{}", levelId).c_str());
+                            auto stored =
+                                glm->getStoredOnlineLevels(fmt::format("{}", levelId).c_str());
                             if (stored && stored->count() > 0) {
                                 levelPtr = static_cast<GJGameLevel*>(stored->objectAtIndex(0));
                             }
                         }
 
-                        auto replaceCoinSprite = [levelPtr, this](CCNode* coinNode,
-                                                     int coinIndex) {
-                            auto frame = CCSpriteFrameCache::sharedSpriteFrameCache()
-                                             ->spriteFrameByName("RL_BlueCoinSmall.png"_spr);
+                        auto replaceCoinSprite = [levelPtr, this](CCNode* coinNode, int coinIndex) {
+                            auto frame =
+                                CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(
+                                    "RL_BlueCoinSmall.png"_spr);
                             CCTexture2D* blueCoinTexture = nullptr;
                             if (!frame) {
-                                blueCoinTexture =
-                                    CCTextureCache::sharedTextureCache()->addImage(
-                                        "RL_BlueCoinSmall.png"_spr, true);
+                                blueCoinTexture = CCTextureCache::sharedTextureCache()->addImage(
+                                    "RL_BlueCoinSmall.png"_spr, true);
                                 if (blueCoinTexture) {
                                     frame = CCSpriteFrame::createWithTexture(
                                         blueCoinTexture,
@@ -698,19 +635,17 @@ class $modify(RLLevelCell, LevelCell) {
                                 log::warn("failed to load blue coin frame/texture");
                                 return;
                             }
-                            if (!coinNode)
-                                return;
+                            if (!coinNode) return;
                             auto coinSprite = typeinfo_cast<CCSprite*>(coinNode);
-                            if (!coinSprite)
-                                return;
+                            if (!coinSprite) return;
 
                             bool coinCollected = false;
                             if (levelPtr) {
                                 std::string coinKey = levelPtr->getCoinKey(coinIndex);
-                                log::debug("LevelCell: checking coin {} key={}", coinIndex, coinKey);
-                                coinCollected =
-                                    GameStatsManager::sharedState()->hasPendingUserCoin(
-                                        coinKey.c_str());
+                                log::debug(
+                                    "LevelCell: checking coin {} key={}", coinIndex, coinKey);
+                                coinCollected = GameStatsManager::sharedState()->hasPendingUserCoin(
+                                    coinKey.c_str());
                             }
 
                             if (coinCollected) {
@@ -719,13 +654,12 @@ class $modify(RLLevelCell, LevelCell) {
                                 coinSprite->setOpacity(255);
                                 coinSprite->setScale(0.6f);
                                 log::debug("LevelCell: replaced coin {} with blue sprite",
-                                    coinIndex);
+                                           coinIndex);
                             } else {
                                 coinSprite->setDisplayFrame(frame);
                                 coinSprite->setColor({120, 120, 120});
                                 coinSprite->setScale(0.6f);
-                                log::debug("LevelCell: darkened coin {} (not present)",
-                                    coinIndex);
+                                log::debug("LevelCell: darkened coin {} (not present)", coinIndex);
                             }
 
                             if (m_compactView) {
@@ -757,10 +691,8 @@ class $modify(RLLevelCell, LevelCell) {
                         CCNode* nameNode = nullptr;
                         if (m_mainLayer) {
                             nameNode = m_mainLayer->getChildByID("level-name");
-                            if (!nameNode)
-                                nameNode = m_mainLayer->getChildByID("level-name-label");
-                            if (!nameNode)
-                                nameNode = m_mainLayer->getChildByID("level-label");
+                            if (!nameNode) nameNode = m_mainLayer->getChildByID("level-name-label");
+                            if (!nameNode) nameNode = m_mainLayer->getChildByID("level-label");
                         }
 
                         auto nameLabel = typeinfo_cast<CCLabelBMFont*>(nameNode);
@@ -785,8 +717,7 @@ class $modify(RLLevelCell, LevelCell) {
                                 nameLabel->runAction(repeat);
                             }
                         } else {
-                            if (nameLabel)
-                                nameLabel->stopActionByTag(0xF00D);
+                            if (nameLabel) nameLabel->stopActionByTag(0xF00D);
                         }
                     }
                 }
@@ -794,124 +725,76 @@ class $modify(RLLevelCell, LevelCell) {
         }
     }
 
-    bool init() {
-        if (!LevelCell::init())
-            return false;
-        // i only want it for rl level browser, lol
-        if (auto scene = CCDirector::sharedDirector()->getRunningScene()) {
-            auto children = scene->getChildren();
-            if (children && children->count() > 0) {
-                auto first = children->objectAtIndex(0);
-                if (first && typeinfo_cast<RLLevelBrowserLayer*>(first)) {
-                    this->m_compactView =
-                        Mod::get()->getSavedValue<bool>("compact_mode", false);
-                    return true;
-                }
-            }
-        }
-        return true;
-    }
-
     void loadFromLevel(GJGameLevel* level) {
         LevelCell::loadFromLevel(level);
-        log::debug("LevelCell loadFromLevel called for level ID: {}",
-            level ? level->m_levelID : 0);
+        log::debug("LevelCell loadFromLevel called for level ID: {}", level ? level->m_levelID : 0);
         // If no level or a local level
         if (!level || level->m_levelID == 0) {
             return;
         }
 
         int levelId = static_cast<int>(level->m_levelID);
+        bool hasPerms =
+            (rl::isUserClassicRole() || rl::isUserPlatformerRole() || rl::isUserOwner());
 
         this->clearAverageDifficultyLabel();
-        if ((rl::isUserClassicRole() || rl::isUserPlatformerRole() || rl::isUserOwner()) && !CachedSettings::get()->disableFetchAverageDifficulty) {
+        if (hasPerms && !CachedSettings::get()->disableFetchAverageDifficulty) {
             Ref<LevelCell> cellRef = this;
-            auto postReq = web::WebRequest();
-            matjson::Value jsonBody = matjson::Value::object();
-            jsonBody["accountId"] = GJAccountManager::get()->m_accountID;
-            jsonBody["argonToken"] = Mod::get()->getSavedValue<std::string>("argon_token");
-            jsonBody["levelId"] = levelId;
-            postReq.bodyJSON(jsonBody);
-            m_fields->m_fetchTask.spawn(
-                postReq.post(std::string(rl::BASE_API_URL) + "/getModLevel"),
-                [cellRef, levelId, this](web::WebResponse const& response) {
-                    if (!cellRef) {
-                        return;
-                    }
-                    if (!response.ok()) {
-                        log::warn("Failed to fetch mod-level info for level ID: {} (server returned {})",
-                            levelId,
-                            response.code());
-                        return;
-                    }
+            m_fields->m_fetchTask.spawn(LocalEndpoint::build("getModLevel")
+                                            .ibody({{"levelId", levelId}})
+                                            .expires(10_mins)
+                                            .getWithAuth(),
+                                        [cellRef, levelId, this](Result<matjson::Value> res) {
+                if (res.isErr()) {
+                    log::warn(
+                        "Failed to fetch mod-level info for {}: {}", levelId, res.unwrapErr());
+                    return;
+                }
 
-                    auto jsonRes = response.json();
-                    if (!jsonRes) {
-                        log::warn("Failed to parse JSON response for mod-level info of level ID: {}",
-                            levelId);
-                        return;
-                    }
+                if (!cellRef) return;
+                if (!this->m_level || this->m_level->m_levelID != levelId) return;
 
-                    if (!this->m_level || this->m_level->m_levelID != levelId) {
-                        return;
-                    }
-
-                    auto json = jsonRes.unwrap();
-                    double averageDifficulty =
-                        json["averageDifficulty"].asDouble().unwrapOrDefault();
-                    this->updateAverageDifficultyLabel(averageDifficulty);
-                });
+                auto json = std::move(res).unwrap();
+                double averageDifficulty = json["averageDifficulty"].asDouble().unwrapOrDefault();
+                this->updateAverageDifficultyLabel(averageDifficulty);
+            });
         }
 
         // request rejection status before returning cached data so rejected UI can still update
-        if ((rl::isUserClassicRole() || rl::isUserPlatformerRole() || rl::isUserOwner()) && !CachedSettings::get()->disableRejectedLayouts) {
+        if (hasPerms && !CachedSettings::get()->disableRejectedLayouts) {
             Ref<LevelCell> cellRef = this;
-            auto checkRejectReq = web::WebRequest();
-            checkRejectReq.param("levelId", numToString(levelId));
-            async::spawn(
-                checkRejectReq.get(std::string(rl::BASE_API_URL) + "/getRejected"),
-                [cellRef, levelId, this](web::WebResponse const& response) {
-                    log::debug("Received rejection status response from server for level ID: {}",
-                        levelId);
+            std::string endpoint = fmt::format("getRejected?levelId={}", levelId);
+            async::spawn(LocalEndpoint::get(std::move(endpoint)),
+                         [cellRef, levelId, this](Result<matjson::Value> res) {
+                if (res.isErr()) {
+                    log::warn(
+                        "Failed to fetch rejection status for level ID: {} (server returned {})",
+                        levelId,
+                        res.unwrapErr());
+                    return;
+                }
 
-                    if (!response.ok()) {
-                        log::warn("Failed to fetch rejection status for level ID: {} (server returned {})",
-                            levelId,
-                            response.code());
-                        return;
+                if (!cellRef) return;
+                auto json = std::move(res).unwrap();
+                bool isRejected = json["isRejected"].asBool().unwrapOr(false);
+                bool isPreviouslyRejected = json["previouslyRejected"].asBool().unwrapOr(false);
+                this->m_fields->m_isRejected = isRejected;
+                this->m_fields->m_previouslyRejected = isPreviouslyRejected;
+                if (isRejected) log::debug("Level ID {} is rejected", levelId);
+                if (this->m_level && this->m_level->m_levelID == levelId) {
+                    this->updateRejectedCellLabel();
+                    if (this->m_fields->m_pendingJson) {
+                        this->applyRatingToCell(this->m_fields->m_pendingJson.value(), levelId);
+                    } else if (auto cachedJson = rl::getCachedLevelRating(levelId)) {
+                        this->applyRatingToCell(*cachedJson, levelId);
                     }
-
-                    auto jsonRes = response.json();
-                    if (!jsonRes) {
-                        log::warn("Failed to parse JSON response for rejection status of level ID: {}",
-                            levelId);
-                        return;
-                    }
-
-                    if (!cellRef) {
-                        return;
-                    }
-
-                    auto json = jsonRes.unwrap();
-                    bool isRejected = json["isRejected"].asBool().unwrapOr(false);
-                    bool isPreviouslyRejected = json["previouslyRejected"].asBool().unwrapOr(false);
-                    this->m_fields->m_isRejected = isRejected;
-                    this->m_fields->m_previouslyRejected = isPreviouslyRejected;
-                    if (isRejected) log::debug("Level ID {} is rejected", levelId);
-                    if (this->m_level && this->m_level->m_levelID == levelId) {
-                        this->updateRejectedCellLabel();
-                        if (this->m_fields->m_pendingJson) {
-                            this->applyRatingToCell(this->m_fields->m_pendingJson.value(), levelId);
-                        } else if (auto cachedJson = rl::getCachedLevelRating(levelId)) {
-                            this->applyRatingToCell(*cachedJson, levelId);
-                        }
-                    }
-                });
+                }
+            });
         }
 
         // try to reuse cached rating data first
         if (auto cachedJson = rl::getCachedLevelRating(levelId)) {
-            log::debug("Using cached rating for level cell ID: {}", levelId);
+            //log::debug("Using cached rating for level cell ID: {}", levelId);
             this->applyRatingToCell(cachedJson.value(), levelId);
             return;
         }
@@ -926,47 +809,42 @@ class $modify(RLLevelCell, LevelCell) {
         auto req = web::WebRequest();
         req.param("levelId", numToString(levelId));
         log::debug("Fetching rating data for level cell ID: {}", levelId);
-        async::spawn(
-            req.get(std::string(rl::BASE_API_URL) + "/fetch"),
-            [cellRef, levelId, this](web::WebResponse const& response) {
-                //log::debug("Received rating response from server for level ID: {}", levelId);
+        async::spawn(req.get(std::string(rl::BASE_API_URL) + "/fetch"),
+                     [cellRef, levelId, this](web::WebResponse const& response) {
+            //log::debug("Received rating response from server for level ID: {}", levelId);
 
-                if (!response.ok()) {
-                    return;
-                }
+            if (!response.ok()) {
+                log::warn("Received bad rating response from server for level ID: {}", levelId);
+                return;
+            }
 
-                auto jsonRes = response.json();
-                if (!jsonRes) {
-                    log::warn("Failed to parse JSON response");
-                    return;
-                }
+            auto jsonRes = response.json();
+            if (!jsonRes) {
+                log::warn("Failed to parse JSON response");
+                return;
+            }
 
-                auto json = jsonRes.unwrap();
-                int difficulty = json["difficulty"].asInt().unwrapOr(0);
+            auto json = std::move(jsonRes).unwrap();
+            rl::setCachedLevelRating(levelId, json);
 
-                if (!cellRef)
-                    return;
+            if (!cellRef) return;
+            int difficulty = json["difficulty"].asInt().unwrapOr(0);
+            
+            // if level is rated, check via checkRated endpoint
+            if (this->m_level->m_stars > 0 && difficulty > 0) {
+                checkRated(this->m_level->m_levelID);
+                return;
+            }
 
-                rl::setCachedLevelRating(levelId, json);
-
-                // if level is rated, check via checkRated endpoint
-                if (this->m_level->m_stars > 0 && difficulty > 0) {
-                    checkRated(this->m_level->m_levelID);
-                    return;
-                }
-
-                if (this->m_mainLayer && this->m_level &&
-                    this->m_level->m_levelID == levelId) {
-                    log::debug(
-                        "Applying fetched rating data immediately for level ID: {}",
-                        levelId);
-                    this->applyRatingToCell(json, levelId);
-                } else {
-                    this->m_fields->m_pendingJson = json;
-                    this->m_fields->m_pendingLevelId = levelId;
-                    this->scheduleUpdate();
-                }
-            });
+            if (this->m_mainLayer && this->m_level && this->m_level->m_levelID == levelId) {
+                log::debug("Applying fetched rating data immediately for level ID: {}", levelId);
+                this->applyRatingToCell(json, levelId);
+            } else {
+                this->m_fields->m_pendingJson = json;
+                this->m_fields->m_pendingLevelId = levelId;
+                this->scheduleUpdate();
+            }
+        });
 
         return;
     }
@@ -976,8 +854,7 @@ class $modify(RLLevelCell, LevelCell) {
 
         if (m_fields->m_pendingJson && this->m_level &&
             this->m_level->m_levelID == m_fields->m_pendingLevelId) {
-            this->applyRatingToCell(m_fields->m_pendingJson.value(),
-                m_fields->m_pendingLevelId);
+            this->applyRatingToCell(m_fields->m_pendingJson.value(), m_fields->m_pendingLevelId);
             m_fields->m_pendingJson = std::nullopt;
             m_fields->m_pendingLevelId = 0;
         }
@@ -994,25 +871,45 @@ class $modify(RLLevelCell, LevelCell) {
             }
         }
     }
+
+#if 1
+    void checkRated(int levelId) {
+        if (RLArgon::failed()) {
+            log::debug("Skipping rate check, not signed in");
+            return;
+        }
+        async::spawn(LocalEndpoint::build("checkRated")
+                         .ibody({{"levelId", levelId}})
+                         .expires(20_mins)
+                         .nostale()
+                         .getWithAuth(),
+                     [levelId](Result<matjson::Value> res) {
+            if (res.isErr()) {
+                log::debug(
+                    "Level ID {} is not rated ({})", levelId, res.unwrapErr());
+            } else {
+                log::debug("Level ID {} is rated (server returned 200)", levelId);
+            }
+        });
+    }
+#else
     void checkRated(int levelId) {
         auto req = web::WebRequest();
         matjson::Value jsonBody = matjson::Value::object();
         jsonBody["accountId"] = GJAccountManager::get()->m_accountID;
-        jsonBody["argonToken"] =
-            Mod::get()->getSavedValue<std::string>("argon_token");
+        jsonBody["argonToken"] = RLArgon::token();
         jsonBody["levelId"] = levelId;
         req.bodyJSON(jsonBody);
 
         async::spawn(req.post(std::string(rl::BASE_API_URL) + "/checkRated"),
-            [levelId](web::WebResponse response) {
-                if (!response.ok()) {
-                    log::debug("Level ID {} is not rated (server returned {})",
-                        levelId,
-                        response.code());
-                } else {
-                    log::debug("Level ID {} is rated (server returned 200)",
-                        levelId);
-                }
-            });
+                     [levelId](web::WebResponse response) {
+            if (!response.ok()) {
+                log::debug(
+                    "Level ID {} is not rated (server returned {})", levelId, response.code());
+            } else {
+                log::debug("Level ID {} is rated (server returned 200)", levelId);
+            }
+        });
     }
+#endif
 };

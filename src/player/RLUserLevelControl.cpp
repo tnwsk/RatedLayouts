@@ -1,6 +1,7 @@
 #include "RLUserLevelControl.hpp"
 #include "RLNetworkUtils.hpp"
 #include "RLConstants.hpp"
+#include "utils/RLArgon.hpp"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "Geode/ui/BasedButtonSprite.hpp"
 #include "Geode/ui/Popup.hpp"
@@ -10,6 +11,7 @@
 #include <fmt/format.h>
 
 using namespace geode::prelude;
+using namespace rl;
 
 RLUserLevelControl* RLUserLevelControl::create(int accountId) {
     auto ret = new RLUserLevelControl();
@@ -130,7 +132,7 @@ void RLUserLevelControl::removeLevel(int levelId) {
             auto upopup = UploadActionPopup::create(nullptr, "Removing level completion...");
             upopup->show();
 
-            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+            auto token = RLArgon::token();
             if (token.empty()) {
                 upopup->showFailMessage("Authentication token not found");
                 return;
@@ -189,7 +191,7 @@ void RLUserLevelControl::onRemoveLevel(CCObject* sender) {
 
 void RLUserLevelControl::fetchCompletionList(int page) {
     m_page = page;
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     if (token.empty()) {
         Notification::create("Cannot get completed levels: auth missing", NotificationIcon::Warning)->show();
         return;
@@ -197,6 +199,8 @@ void RLUserLevelControl::fetchCompletionList(int page) {
 
     if (m_listNode)
         m_listNode->clear();
+    if (m_emptyLabel)
+        m_emptyLabel->setVisible(false);
     if (m_listSpinner)
         m_listSpinner->setVisible(true);
 
@@ -282,6 +286,7 @@ void RLUserLevelControl::populateCompletionLevels(cocos2d::CCArray* levels) {
 
     m_listNode->clear();
     if (m_emptyLabel) {
+        m_emptyLabel->setVisible(false);
         m_emptyLabel->removeFromParent();
         m_emptyLabel = nullptr;
     }

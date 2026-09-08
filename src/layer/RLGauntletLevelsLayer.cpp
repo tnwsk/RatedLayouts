@@ -134,8 +134,6 @@ void RLGauntletLevelsLayer::fetchLevelDetails(int gauntletId) {
     m_getLevelsTask.spawn(
         request.post(std::string(rl::BASE_API_URL) + "/getLevelsGauntlets"),
         [self](web::WebResponse const& response) {
-            if (!self)
-                return;
             if (response.ok()) {
                 auto jsonRes = response.json();
                 if (jsonRes.isOk()) {

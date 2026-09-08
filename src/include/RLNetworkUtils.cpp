@@ -4,7 +4,17 @@
 #include <mutex>
 #include <optional>
 #include <unordered_map>
+#include "utils/CachedSettings.hpp"
 #include "utils/NoHashHasher.hpp"
+
+#define TRY_LOCK(MUTEX, TIMEOUT, FAIL...)             \
+    std::lock_guard lock_(*({                         \
+        using namespace std::chrono_literals;         \
+        auto& mtx_ = MUTEX;                           \
+        if (!mtx_.try_lock_for(TIMEOUT)) return FAIL; \
+        &mtx_;                                        \
+    }),                                               \
+                          std::adopt_lock)
 
 using namespace geode::prelude;
 using namespace rl;
@@ -20,7 +30,6 @@ enum { kRequestCacheTimeout = 30 };
 static std::recursive_timed_mutex RequestCacheMutex;
 static std::optional<matjson::Value> RequestCache;
 static constinit RequestTimestamp LastTimeRequestCacheSavedToFile = -1;
-static RequestCacheType CommentRoleCache;
 static RequestCacheType LevelRatingCache;
 
 /// Avoid flooding logs with these messages.
@@ -63,8 +72,7 @@ std::string_view rl::getBaseURL() {
     // The addresses are pointing to "https://www.boomlings.com/database/getGJLevels21.php"
     // in the main game executable
     std::string_view ret = (const char*)(base::get() + urlBaseOffset);
-    if (ret.size() > 34)
-        ret = ret.substr(0, 34);
+    if (ret.size() > 34) ret = ret.substr(0, 34);
 
     logBaseURLOnce(ret);
     return ret;
@@ -86,7 +94,7 @@ static void pruneCacheMap(std::string_view name, RequestCacheType& cache) {
     std::vector<std::pair<int, std::time_t>> entries;
     entries.reserve(cache.size());
     for (auto const& [id, entry] : cache) {
-        entries.emplace_back(id, entry.timestamp);
+        entries.emplace_back(id, entry.expiresAt());
     }
     std::sort(entries.begin(), entries.end(), [](auto const& a, auto const& b) {
         return a.second < b.second;
@@ -102,16 +110,16 @@ static void pruneCacheMap(std::string_view name, RequestCacheType& cache) {
 static std::optional<matjson::Value> getCached(std::string_view name,
                                                RequestCacheType& cache,
                                                int id) {
-    std::lock_guard lock(RequestCacheMutex);
+    //std::lock_guard lock(RequestCacheMutex);
+    TRY_LOCK(RequestCacheMutex, 1s, std::nullopt);
     auto it = cache.find(id);
-    if (it != cache.end() && it->second.isValid()) {
-        return it->second.json;
+    if (it != cache.end() && it->second.isStale()) {
+        return *it->second;
     }
     auto entry = rl::loadRequestCacheEntry(name, id);
     if (entry) {
         cache[id] = *entry;
-        if (entry->isValid())
-            return entry->json;
+        if (entry->isStale()) return entry->value();
     }
     return std::nullopt;
 }
@@ -119,20 +127,36 @@ static std::optional<matjson::Value> getCached(std::string_view name,
 static std::optional<matjson::Value> getStale(std::string_view name,
                                               RequestCacheType& cache,
                                               int id) {
-    std::lock_guard lock(RequestCacheMutex);
+    //std::lock_guard lock(RequestCacheMutex);
+    TRY_LOCK(RequestCacheMutex, 1s, std::nullopt);
     auto it = cache.find(id);
-    if (it != cache.end())
-        return it->second.json;
+    if (it != cache.end()) return *it->second;
     auto entry = rl::loadRequestCacheEntry(name, id);
     if (entry) {
         cache[id] = *entry;
-        return entry->json;
+        return entry->value();
     }
     return std::nullopt;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Request Cache
+
+int64_t rl::getRequestCacheLifetimeSeconds() {
+    if (!Mod::get()) return 360;
+    return CachedSettings::get()->requestCacheLifetime;
+}
+
+int rl::getRequestCacheMaxItems() {
+    if (!Mod::get()) return 128;
+    return CachedSettings::get()->requestCacheMaxItems;
+}
+
+bool rl::isRequestCacheValid(RequestTimestamp timestamp) {
+    std::int64_t lifetime = getRequestCacheLifetimeSeconds();
+    if (lifetime <= 0) return false;
+    return isRequestCacheValid(timestamp, asp::Duration::fromSecs(lifetime).micros());
+}
 
 static matjson::Value loadRequestCacheRootFromFile() {
     auto path = getRequestCachePath();
@@ -149,12 +173,10 @@ static matjson::Value loadRequestCacheRootFromFile() {
 
 static matjson::Value* loadRequestSection(std::string_view section) {
     auto& root = *loadRequestCacheRootLockfree();
-    if (!root.isObject())
-        return nullptr;
+    if (!root.isObject()) return nullptr;
 
     auto& sectionValue = root[section];
-    if (!sectionValue.isObject())
-        return nullptr;
+    if (!sectionValue.isObject()) return nullptr;
 
     return &sectionValue;
 }
@@ -164,17 +186,14 @@ static matjson::Value* loadRequestEntry(std::string_view section, int id) {
         auto& sectionValue = *sectionPtr;
         std::string key = geode::utils::numToString(id);
         auto& entry = sectionValue[key];
-        if (entry.isObject())
-            return &entry;
+        if (entry.isObject()) return &entry;
     }
     return nullptr;
 }
 
 bool rl::requestCacheExists() {
     std::lock_guard lock(RequestCacheMutex);
-    if (!CommentRoleCache.empty() ||
-        !LevelRatingCache.empty() ||
-        RequestCache.has_value()) {
+    if (!LevelRatingCache.empty() || RequestCache.has_value()) {
         return true;
     }
     return std::filesystem::exists(getRequestCachePath());
@@ -185,8 +204,7 @@ matjson::Value* rl::loadRequestCacheRootLockfree() {
         return &*RequestCache;
     } else [[unlikely]] {
         // Create from file data!
-        return &RequestCache.emplace(
-            loadRequestCacheRootFromFile());
+        return &RequestCache.emplace(loadRequestCacheRootFromFile());
     }
 }
 
@@ -215,15 +233,13 @@ bool rl::saveRequestCacheRoot(matjson::Value const& root) {
 }
 
 static bool doesRequestCacheNeedSave() {
-    if (LastTimeRequestCacheSavedToFile <= -1)
-        return true;
+    if (LastTimeRequestCacheSavedToFile <= -1) return true;
     const RequestTimestamp diff = getCurrentTimestamp() - LastTimeRequestCacheSavedToFile;
     return diff < kRequestCacheTimeout;
 }
 
 static bool saveRequestCacheRootWithTimeout() {
-    if (!doesRequestCacheNeedSave())
-        return true;
+    if (!doesRequestCacheNeedSave()) return true;
     // TODO: Make this async?
     if (rl::saveRequestCacheRoot()) {
         LastTimeRequestCacheSavedToFile = getCurrentTimestamp();
@@ -237,8 +253,7 @@ std::optional<RequestCacheEntry> rl::loadRequestCacheEntry(std::string_view sect
     std::lock_guard lock(RequestCacheMutex);
     if (auto* entry = loadRequestEntry(section, id)) {
         auto entryOrErr = entry->as<RequestCacheEntry>();
-        if (entryOrErr.isOk())
-            return std::move(entryOrErr).unwrap();
+        if (entryOrErr.isOk()) return std::move(entryOrErr).unwrap();
     }
     return std::nullopt;
 }
@@ -246,9 +261,8 @@ std::optional<RequestCacheEntry> rl::loadRequestCacheEntry(std::string_view sect
 void rl::storeRequestCacheEntry(std::string_view section, int id, matjson::Value const& data) {
     std::lock_guard lock(RequestCacheMutex);
     if (auto* sectionPtr = loadRequestSection(section)) {
-        RequestCacheEntry req{data, getCurrentTimestamp()};
         std::string key = geode::utils::numToString(id);
-        sectionPtr->set(key, req);
+        sectionPtr->set(key, makeRequestCacheEntry(data));
         saveRequestCacheRootWithTimeout();
     }
 }
@@ -257,8 +271,7 @@ void rl::removeRequestCacheEntry(std::string_view section, int id) {
     std::lock_guard lock(RequestCacheMutex);
     if (auto* sectionPtr = loadRequestSection(section)) {
         std::string key = geode::utils::numToString(id);
-        if (!sectionPtr->erase(key))
-            return;
+        if (!sectionPtr->erase(key)) return;
         // Save the new value.
         saveRequestCacheRootWithTimeout();
     }
@@ -266,7 +279,6 @@ void rl::removeRequestCacheEntry(std::string_view section, int id) {
 
 void rl::clearRequestCache() {
     std::lock_guard lock(RequestCacheMutex);
-    CommentRoleCache.clear();
     LevelRatingCache.clear();
     if (RequestCache) RequestCache.reset();
     auto requestPath = rl::getRequestCachePath();
@@ -283,16 +295,14 @@ void rl::clearRequestCache() {
 
 bool rl::saveNameplateCache(int nameplateId, std::string const& data) {
     // TODO: Cache nameplates
-    auto path = getNameplateCachePath(nameplateId);
+    auto path = rl::getNameplateCachePath(nameplateId);
     std::filesystem::create_directories(path.parent_path());
-    auto writeRes = utils::file::writeString(
-        utils::string::pathToString(path), data);
+    auto writeRes = utils::file::writeString(utils::string::pathToString(path), data);
     return writeRes.isOk();
 }
 
 bool rl::hasNameplateCache(int nameplateId) {
-    return std::filesystem::exists(
-        getNameplateCachePath(nameplateId));
+    return std::filesystem::exists(rl::getNameplateCachePath(nameplateId));
 }
 
 void rl::clearNameplateCache() {
@@ -304,21 +314,26 @@ void rl::clearNameplateCache() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Comment Cache
+// Icon Cache
 
-std::optional<matjson::Value> rl::getCachedCommentRole(int accountId) {
-    return getCached("commentRoleCache", CommentRoleCache, accountId);
+bool rl::saveIconsCache(std::string const& url, std::string const& data) {
+    // TODO: Cache icons
+    auto path = rl::getIconsCachePath(url);
+    std::filesystem::create_directories(path.parent_path());
+    auto writeRes = utils::file::writeString(utils::string::pathToString(path), data);
+    return writeRes.isOk();
 }
 
-std::optional<matjson::Value> rl::getStaleCommentRole(int accountId) {
-    return getStale("commentRoleCache", CommentRoleCache, accountId);
+bool rl::hasIconsCache(std::string const& url) {
+    return std::filesystem::exists(rl::getIconsCachePath(url));
 }
 
-void rl::setCachedCommentRole(int accountId, matjson::Value const& data) {
-    std::lock_guard lock(RequestCacheMutex);
-    CommentRoleCache[accountId] = RequestCacheEntry{data, getCurrentTimestamp()};
-    pruneCacheMap("commentRoleCache", CommentRoleCache);
-    storeRequestCacheEntry("commentRoleCache", accountId, data);
+void rl::clearIconsCache() {
+    auto path = rl::getIconsCacheDir();
+    if (std::filesystem::exists(path)) {
+        std::error_code ec;
+        std::filesystem::remove_all(path, ec);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -334,7 +349,7 @@ std::optional<matjson::Value> rl::getStaleLevelRating(int levelId) {
 
 void rl::setCachedLevelRating(int levelId, matjson::Value const& data) {
     std::lock_guard lock(RequestCacheMutex);
-    LevelRatingCache[levelId] = RequestCacheEntry{data, getCurrentTimestamp()};
+    LevelRatingCache[levelId] = makeRequestCacheEntry(data);
     pruneCacheMap("levelRatingCache", LevelRatingCache);
     storeRequestCacheEntry("levelRatingCache", levelId, data);
 }
@@ -352,8 +367,7 @@ void rl::removeCachedLevelRating(int levelId) {
 /// Saves in a way that should avoid deadlocks.
 static bool saveRequestCacheOnExit() {
     using namespace std::chrono_literals;
-    if (!RequestCacheMutex.try_lock_for(2s))
-        return false;
+    if (!RequestCacheMutex.try_lock_for(2s)) return false;
     // Try saving the data;
     const bool saved = rl::saveRequestCacheRoot();
     if (saved) RequestCache.reset();

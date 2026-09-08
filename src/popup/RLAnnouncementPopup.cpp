@@ -1,10 +1,11 @@
 #include "popup/RLAnnouncementPopup.hpp"
-#include "RLConstants.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/ui/NineSlice.hpp>
+#include "RLConstants.hpp"
+#include "utils/LazyNameplate.hpp"
 
 using namespace geode::prelude;
-//using namespace rl;
+using namespace rl;
 
 RLAnnouncementPopup* RLAnnouncementPopup::create() {
     auto popup = new RLAnnouncementPopup();
@@ -17,14 +18,10 @@ RLAnnouncementPopup* RLAnnouncementPopup::create() {
 }
 
 bool RLAnnouncementPopup::init() {
-    if (!Popup::init(400.f, 225.f, "GJ_square07.png"))
-        return false;
+    if (!Popup::init(400.f, 225.f, "GJ_square07.png")) return false;
 
-    auto imageSpr =
-        LazySprite::create({m_mainLayer->getScaledContentSize()}, true);
-    imageSpr->loadFromUrl(std::string(rl::BASE_API_URL) + "/cdn/gauntletBanner.png",
-        CCImage::kFmtPng,
-        true);
+    std::string imageUrl = std::string(rl::BASE_API_URL) + "/cdn/gauntletBanner.png";
+    auto* imageSpr = LazyIcon::create({m_mainLayer->getScaledContentSize()}, std::move(imageUrl), true);
     imageSpr->setAutoResize(true);
 
     auto sStencil = NineSlice::create("GJ_square06.png");
@@ -40,15 +37,13 @@ bool RLAnnouncementPopup::init() {
     clip->setAlphaThreshold(0.01f);
 
     // position image centered inside clip
-    imageSpr->setPosition({m_mainLayer->getScaledContentSize().width / 2.f,
-        m_mainLayer->getScaledContentSize().height / 2.f});
+    imageSpr->setPosition(
+        {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height / 2.f});
     clip->addChild(imageSpr);
 
     // button
-    auto buttonSpr =
-        ButtonSprite::create("Learn More", "goldFont.fnt", "GJ_button_01.png");
-    auto buttonItem = CCMenuItemSpriteExtra::create(
-        buttonSpr, this, menu_selector(RLAnnouncementPopup::onClick));
+    auto buttonSpr = ButtonSprite::create("Learn More", "goldFont.fnt", "GJ_button_01.png");
+    auto buttonItem = CCMenuItemSpriteExtra::create(buttonSpr, this, menu_selector(RLAnnouncementPopup::onClick));
     buttonItem->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, 0});
     m_buttonMenu->addChild(buttonItem);
 
@@ -63,12 +58,8 @@ void RLAnnouncementPopup::onClick(CCObject* sender) {
         "No",
         "Yes",
         [this](auto, bool yes) {
-            if (!yes)
-                return;
-            Notification::create("Opening a new link to the browser",
-                NotificationIcon::Info)
-                ->show();
-            utils::web::openLinkInBrowser(
-                std::string(rl::BASE_API_URL) + "/getRedirectURL");
+            if (!yes) return;
+            Notification::create("Opening a new link to the browser", NotificationIcon::Info)->show();
+            utils::web::openLinkInBrowser(std::string(rl::BASE_API_URL) + "/getRedirectURL");
         });
 }

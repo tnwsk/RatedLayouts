@@ -2,8 +2,10 @@
 #include "popup/RLQueueLevelPopup.hpp"
 #include "RLConstants.hpp"
 #include "RLNetworkUtils.hpp"
+#include "utils/RLArgon.hpp"
 
 using namespace geode::prelude;
+using namespace rl;
 
 RLQueueLevelPopup* RLQueueLevelPopup::create() {
     auto ret = new RLQueueLevelPopup();
@@ -169,7 +171,7 @@ void RLQueueLevelPopup::submitToQueue(CCObject* sender) {
             upopup->show();
             matjson::Value jsonBody = matjson::Value::object();
             jsonBody["accountId"] = GJAccountManager::get()->m_accountID;
-            jsonBody["argonToken"] = Mod::get()->getSavedValue<std::string>("argon_token");
+            jsonBody["argonToken"] = RLArgon::token();
             jsonBody["levelId"] = m_selectedLevelId;
 
             auto req = web::WebRequest();

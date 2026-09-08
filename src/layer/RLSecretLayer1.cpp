@@ -3,12 +3,14 @@
 #include "RLConstants.hpp"
 #include "RLDialogIcons.hpp"
 #include "RLSecretLayer1.hpp"
-#include "popup/RLRubiesCodePopup.hpp"
 #include "RLAchievements.hpp"
 #include "RLRubyUtils.hpp"
+#include "popup/RLRubiesCodePopup.hpp"
+#include "utils/RLArgon.hpp"
 #include <filesystem>
 
 using namespace geode::prelude;
+using namespace rl;
 
 static std::filesystem::path redeemedCodesPath() {
     return dirs::getModsSaveDir() / Mod::get()->getID() / "redeemed_codes.json";
@@ -240,7 +242,7 @@ void RLSecretLayer1::onRedeem(CCObject* sender) {
         return;
     }
 
-    std::string argonToken = Mod::get()->getSavedValue<std::string>("argon_token");
+    std::string argonToken = RLArgon::token();
     if (argonToken.empty()) {
         DialogObject* dialogObj = nullptr;
         dialogObj = DialogObject::create("The Oracle", "Something went wrong...", 3, 1.f, false, ccWHITE);
@@ -323,7 +325,7 @@ void RLSecretLayer1::startRedeemRequest() {
 
     Ref<RLSecretLayer1> self = this;
 
-    std::string argonToken = Mod::get()->getSavedValue<std::string>("argon_token");
+    std::string argonToken = RLArgon::token();
     if (argonToken.empty()) {
         DialogObject* dialogObj = nullptr;
         dialogObj = DialogObject::create("The Oracle", "Something went wrong...", 3, 1.f, false, ccWHITE);
@@ -394,10 +396,6 @@ void RLSecretLayer1::startRedeemRequest() {
 
     async::spawn(req.post(std::string(rl::BASE_API_URL) + "/getRubiesReward"),
         [self, code](web::WebResponse res) {
-            if (!self) {
-                return;
-            }
-
             if (!res.ok() || isCodeRedeemed(code)) {
                 if (self->m_textLabel) {
                     self->m_textLabel->setString("The Cosmos rejects your request");

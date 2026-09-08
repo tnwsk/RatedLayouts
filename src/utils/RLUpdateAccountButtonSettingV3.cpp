@@ -1,6 +1,7 @@
 #include "RLUpdateAccountButtonSettingV3.hpp"
 #include "RLConstants.hpp"
 #include "RLNetworkUtils.hpp"
+#include "utils/RLArgon.hpp"
 #include <Geode/binding/UploadActionPopup.hpp>
 
 using namespace geode::prelude;
@@ -73,7 +74,7 @@ bool RLUpdateAccountButtonSettingNodeV3::init(
 void RLUpdateAccountButtonSettingNodeV3::updateState(CCNode* invoker) {
     SettingNodeV3::updateState(invoker);
     bool hasAccount = GJAccountManager::get()->m_accountID != 0;
-    bool hasToken = !Mod::get()->getSavedValue<std::string>("argon_token").empty();
+    bool hasToken = RLArgon::hasToken();
     bool shouldEnable = this->getSetting()->shouldEnable() && hasAccount && hasToken;
 
     if (m_button) {
@@ -98,7 +99,7 @@ void RLUpdateAccountButtonSettingNodeV3::onUpdateAccount(CCObject*) {
         return;
     }
 
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     if (token.empty()) {
         Notification::create("Argon token missing", NotificationIcon::Warning)
             ->show();

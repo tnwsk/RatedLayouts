@@ -1,9 +1,14 @@
 #include "RLSettingsV3.hpp"
+#include "RLConfig.hpp"
 #include "RLNetworkUtils.hpp"
+#include "utils/CachedSettings.hpp"
+#include "utils/RLData.hpp"
 #include "Geode/ui/Popup.hpp"
 
 using namespace geode::prelude;
 using namespace rl;
+
+// TODO: Add checkbox popup + time to clear.
 
 Result<std::shared_ptr<SettingV3>> RLClearCacheButtonSettingV3::parse(
     std::string const& key,
@@ -69,10 +74,21 @@ bool RLClearCacheButtonSettingNodeV3::init(
     return true;
 }
 
+static bool HasCache() {
+    if (CachedSettings::user()->isPseudoOwner())
+        return rl::hasRLDataCache() || rl::requestCacheExists();
+    return rl::requestCacheExists();
+}
+
+static void ClearCache() {
+    if (CachedSettings::user()->isPseudoOwner())
+        rl::clearRLDataCache();
+    rl::clearRequestCache();
+}
+
 void RLClearCacheButtonSettingNodeV3::updateState(CCNode* invoker) {
     SettingNodeV3::updateState(invoker);
-    bool hasCache = rl::requestCacheExists();
-    bool shouldEnable = this->getSetting()->shouldEnable() && hasCache;
+    bool shouldEnable = this->getSetting()->shouldEnable() && HasCache();
 
     if (m_button) {
         m_button->setEnabled(shouldEnable);
@@ -92,14 +108,14 @@ void RLClearCacheButtonSettingNodeV3::updateState(CCNode* invoker) {
 void RLClearCacheButtonSettingNodeV3::confirmClear(CCObject*) {
     createQuickPopup("Clear Cache",
         "Are you sure you want to <cg>clear the cache</c>?\n"
-        "<cy>This will remove cached data for levels and comments.</c>\n"
+        "<cy>This will remove ALL cached data.</c>\n"
         "<cr>This action cannot be undone.</c>",
         "No",
         "Yes",
         [this](auto, bool yes) {
             if (!yes)
                 return;
-            rl::clearRequestCache();
+            ClearCache();
             this->updateState(nullptr);
             Notification::create(
                 "Cache Cleared",

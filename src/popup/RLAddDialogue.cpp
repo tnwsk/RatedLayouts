@@ -2,9 +2,10 @@
 #include <Geode/binding/FLAlertLayer.hpp>
 #include "RLNetworkUtils.hpp"
 #include "RLConstants.hpp"
+#include "utils/RLArgon.hpp"
 
 using namespace geode::prelude;
-//using namespace rl;
+using namespace rl;
 
 RLAddDialogue* RLAddDialogue::create() {
     auto popup = new RLAddDialogue();
@@ -55,8 +56,8 @@ void RLAddDialogue::onInfo(CCObject* sender) {
         "2. Dialogue must be <cg>appropriate</c>. Submitting an <cr>inappropriate dialogue</c> may result in a <cr>ban</c> from using this feature.\n"
         "3. Do <cr>not</c> bypass any of these rules.\n"
         "### <cy>By submitting custom dialogue, you agree to follow these rules.\n"
-        "### <cl>ArcticWoof has the rights to remove any dialogue that is inappropriate without any notice.</c>\n"
-        "### <cc>All dialogues submitted are logged and visible by Layout Admins/Mods for reviewing purposes.</c>";
+        "### <cl>The Rated Layouts team reserves the rights to remove any dialogue without notice.</c>\n"
+        "### <cc>All dialogue is logged and reviewed by Layout Admins/Mods.</c>";
     MDPopup::create(
         "Custom Dialogue Rules",
         content.c_str(),
@@ -104,7 +105,7 @@ void RLAddDialogue::onSubmit(CCObject* sender) {
     matjson::Value body = matjson::Value::object();
     body["body"] = dialogueText;
     body["accountId"] = GJAccountManager::get()->m_accountID;
-    body["argonToken"] = Mod::get()->getSavedValue<std::string>("argon_token");
+    body["argonToken"] = RLArgon::token();
 
     auto req = web::WebRequest();
     req.bodyJSON(body);

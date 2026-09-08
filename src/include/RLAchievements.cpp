@@ -88,7 +88,7 @@ static constexpr Achievement s_miscAchievements[] {
     {"misc_creator_100", "Business Layout Creator", "Talk to the Layout Creator 100 times", Collectable::Misc, 1, "RL_bob.png"_spr},
     {"misc_browser", "www.ratedlayouts.com", "Browse the Rated Layouts Website", Collectable::Misc, 1, "RL_browser01.png"_spr},
     {"misc_salt", "SALT finally rated", "but is it verified?", Collectable::Misc, 1, "RL_bob.png"_spr},
-    {"misc_arcticwoof", "Find the Woof", "Find the Rated Layouts Creator", Collectable::Misc, 1, "RL_arcticwoof.png"_spr},
+    {"misc_arcticwoof", "Find the Woof", "Find the Rated Layouts Creator", Collectable::Misc, 1, "RL_arcticwoof01.png"_spr},
     {"misc_gauntlet", "Gauntlet Conqueror", "Complete a Layout Gauntlet", Collectable::Misc, 1, "RL_gauntlet-2.png"_spr},
     {"misc_spire", "Something has aligned...", "You now know about it, be careful about where you go…", Collectable::Misc, 1, "RL_planetBig.png"_spr},
     {"misc_code", "Cosmos has accepted you", "Redeem a code to the Cosmos", Collectable::Misc, 1, "RL_oracle.png"_spr},

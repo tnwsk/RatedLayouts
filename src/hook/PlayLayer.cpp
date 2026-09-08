@@ -69,26 +69,33 @@ class $modify(RLPlayLayer, PlayLayer) {
                     }
                 }
             } else {
-                Ref<RLPlayLayer> self = this;
+                WeakRef<RLPlayLayer> weak = this;
                 auto req = web::WebRequest();
                 std::string url =
                     fmt::format("{}/fetch?levelId={}", std::string(rl::BASE_API_URL), lvlId);
-                async::spawn(req.get(url), [self, lvlId](web::WebResponse resp) {
-                    if (!self)
-                        return;
+                async::spawn(req.get(url), [weak, lvlId](web::WebResponse resp) {
                     if (!resp.ok()) {
                         log::debug("fetch (play) returned non-ok for level {}: {}", lvlId, resp.code());
-                        self->m_fields->m_isRatedLayout = false;
+                        if (auto self = weak.lock())
+                            self->m_fields->m_isRatedLayout = false;
                         return;
                     }
                     auto jsonRes = resp.json();
                     if (!jsonRes) {
                         log::warn("Failed to parse fetch (play) JSON response for level {}", lvlId);
-                        self->m_fields->m_isRatedLayout = false;
+                        if (auto self = weak.lock())
+                            self->m_fields->m_isRatedLayout = false;
                         return;
                     }
-                    auto json = jsonRes.unwrap();
+                    auto json = std::move(jsonRes).unwrap();
                     rl::setCachedLevelRating(lvlId, json);
+
+                    Ref<RLPlayLayer> self = weak.lock();
+                    if (!self) {
+                        log::trace("RLPlayLayer out of scope for {}", lvlId);
+                        return;
+                    }
+
                     auto difficulty = json["difficulty"].asInt().unwrapOr(0);
                     auto isSuggested = json["isSuggested"].asBool().unwrapOr(false);
                     self->m_fields->m_levelDifficulty = difficulty;

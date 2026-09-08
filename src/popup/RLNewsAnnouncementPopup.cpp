@@ -2,6 +2,7 @@
 #include "RLAchievements.hpp"
 #include "RLConstants.hpp"
 #include "utils/CachedSettings.hpp"
+#include "utils/RLData.hpp"
 #include "Geode/utils/general.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/ui/General.hpp>
@@ -139,29 +140,20 @@ bool RLNewsAnnouncementPopup::init() {
 
     Ref<RLNewsAnnouncementPopup> self = this;
     m_fetchTask.spawn(
-        web::WebRequest().get(std::string(rl::BASE_API_URL) + "/getAllAnnouncement"),
-        [self](web::WebResponse const& res) {
-            if (!self)
-                return;
-
-            if (!res.ok()) {
+        LocalEndpoint::build("getAllAnnouncement").expires(5_mins).get(),
+        [self](Result<matjson::Value> res) {
+            if (res.isErr()) {
+                log::error("Failed to fetch announcements: {}", res.unwrapErr());
                 self->showError("Failed to fetch announcements");
                 return;
             }
 
-            auto jsonRes = res.json();
-            if (!jsonRes) {
-                self->showError("Invalid announcement response");
-                return;
-            }
-
-            auto root = jsonRes.unwrap();
+            if (!self) return;
+            auto root = std::move(res).unwrap();
             std::vector<AnnouncementEntry> announcements;
 
             auto parseItem = [&](auto const& item) {
-                if (!item.isObject()) {
-                    return;
-                }
+                if (!item.isObject()) return;
                 AnnouncementEntry entry;
                 if (auto idRes = item["id"].template as<int>(); idRes)
                     entry.id = idRes.unwrap();

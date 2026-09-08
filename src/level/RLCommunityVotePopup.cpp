@@ -1,11 +1,13 @@
 #include "RLCommunityVotePopup.hpp"
 #include "RLAchievements.hpp"
 #include "RLConstants.hpp"
+#include "utils/RLArgon.hpp"
 #include <Geode/binding/GJAccountManager.hpp>
 #include <Geode/binding/UploadActionPopup.hpp>
 #include <algorithm>
 
 using namespace geode::prelude;
+using namespace rl;
 
 RLCommunityVotePopup* RLCommunityVotePopup::create() {
     return RLCommunityVotePopup::create(0);
@@ -37,8 +39,7 @@ void RLCommunityVotePopup::onSubmit(CCObject*) {
                     UploadActionPopup::create(nullptr, "Submitting your vote...");
                 upopup->show();
                 Ref<UploadActionPopup> popupRef = upopup;
-                auto argonToken =
-                    Mod::get()->getSavedValue<std::string>("argon_token");
+                auto argonToken = RLArgon::token();
                 if (argonToken.empty()) {
                     popupRef->showFailMessage("Auth required to submit vote");
                     return;
@@ -360,8 +361,7 @@ void RLCommunityVotePopup::refreshFromServer() {
     // show/hide score labels accordingly
     matjson::Value voteBody = matjson::Value::object();
     voteBody["accountId"] = GJAccountManager::get()->m_accountID;
-    voteBody["argonToken"] =
-        Mod::get()->getSavedValue<std::string>("argon_token");
+    voteBody["argonToken"] = RLArgon::token();
     voteBody["levelId"] = m_levelId;
 
     web::WebRequest voteReq;

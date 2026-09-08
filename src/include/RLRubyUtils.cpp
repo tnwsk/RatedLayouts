@@ -96,9 +96,11 @@ bool rl::persistCollectedRubies(int levelId, int totalRuby, int collected) noexc
         if (parsed && parsed.unwrap().isObject())
             root = parsed.unwrap();
     }
-    root[fmt::format("{}", levelId)] = matjson::Value::object();
-    root[fmt::format("{}", levelId)]["totalRubies"] = totalRuby;
-    root[fmt::format("{}", levelId)]["collectedRubies"] = collected;
+    auto id = geode::utils::numToString(levelId);
+    root[id] = matjson::makeObject({
+        {"totalRubies", totalRuby},
+        {"collectedRubies", collected},
+    });
     auto writeRes = utils::file::writeString(
         utils::string::pathToString(savePath), root.dump());
     return static_cast<bool>(writeRes);

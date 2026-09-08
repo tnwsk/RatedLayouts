@@ -10,6 +10,7 @@
 #include "RLConstants.hpp"
 #include "RLNetworkUtils.hpp"
 #include "utils/CachedSettings.hpp"
+#include "utils/LazyNameplate.hpp"
 #include "utils/RLData.hpp"
 
 // TODO: Merge implementation between this and ProfilePage
@@ -62,19 +63,17 @@ class $modify(RLCommentCell, CommentCell) {
     // so another hacky way to apply the text color after role info is fetched and applied
     // this is really jank but it works so whatever
     void schedulePendingRoleTextColorRetry() {
-        if (m_fields->m_pendingRoleTextColorScheduled || !m_fields->m_pendingRoleJson || !m_mainLayer)
-            return;
+        if (m_fields->m_pendingRoleTextColorScheduled || !m_fields->m_pendingRoleJson || !m_mainLayer) return;
         m_fields->m_pendingRoleTextColorScheduled = true;
-        this->runAction(CCSequence::create(
-            CCDelayTime::create(0.0f),
-            CCCallFunc::create(this, callfunc_selector(RLCommentCell::applyPendingRoleTextColor)),
-            nullptr));
+        this->runAction(
+            CCSequence::create(CCDelayTime::create(0.0f),
+                               CCCallFunc::create(this, callfunc_selector(RLCommentCell::applyPendingRoleTextColor)),
+                               nullptr));
     }
 
     void applyPendingRoleTextColor() {
         m_fields->m_pendingRoleTextColorScheduled = false;
-        if (!m_fields->m_pendingRoleJson || !m_mainLayer)
-            return;
+        if (!m_fields->m_pendingRoleJson || !m_mainLayer) return;
         if (applyCommentTextColor(m_fields->m_pendingRoleAccountId)) {
             m_fields->m_pendingRoleJson = std::nullopt;
             m_fields->m_pendingRoleAccountId = 0;
@@ -129,18 +128,16 @@ class $modify(RLCommentCell, CommentCell) {
 
         // check for prevter.comment_emojis
         bool colorApplied = false;
-        if (Loader::get()->isModLoaded("prevter.comment_emojis")) {
+        if (CachedSettings::mods()->comment_emojis) {
             log::debug("prevter.comment_emojis mod detected, looking for custom text area");
 
-            if (auto emojiTextArea = m_mainLayer->getChildByIDRecursive(
-                    "prevter.comment_emojis/comment-text-area")) {
+            if (auto emojiTextArea = m_mainLayer->getChildByIDRecursive("prevter.comment_emojis/comment-text-area")) {
                 if (auto colorable = typeinfo_cast<CCRGBAProtocol*>(emojiTextArea)) {
                     colorable->setColor(color);
                     colorApplied = true;
                 }
             }
-            if (auto emojiLabel = m_mainLayer->getChildByIDRecursive(
-                    "prevter.comment_emojis/comment-text-label")) {
+            if (auto emojiLabel = m_mainLayer->getChildByIDRecursive("prevter.comment_emojis/comment-text-label")) {
                 if (auto colorable = typeinfo_cast<CCRGBAProtocol*>(emojiLabel)) {
                     colorable->setColor(color);
                     colorApplied = true;
@@ -150,8 +147,8 @@ class $modify(RLCommentCell, CommentCell) {
         }
 
         // vanilla text area/label
-        if (auto commentTextLabel = m_mainLayer->getChildByIDRecursive(
-                "comment-text-label")) {  // compact mode (easy face mode)
+        if (auto commentTextLabel =
+                m_mainLayer->getChildByIDRecursive("comment-text-label")) {  // compact mode (easy face mode)
             log::debug("Found comment-text-label, applying color");
             if (auto colorable = typeinfo_cast<CCRGBAProtocol*>(commentTextLabel)) {
                 colorable->setColor(color);
@@ -181,39 +178,14 @@ class $modify(RLCommentCell, CommentCell) {
         bool validCell = m_mainLayer && m_backgroundLayer;
         const auto nameplate = info.nameplate;
         if (validCell && nameplate != 0 && !CachedSettings::get()->disableNameplateInComment) {
-            std::string url = fmt::format(
-                "{}/nameplates/banner/nameplate_{}.png",
-                std::string(rl::BASE_API_URL),
-                nameplate);
-            auto cachePath = rl::getNameplateCachePath(nameplate);
-            auto createNameplateSprite = [&](CCSize size, CCPoint pos) {
-                auto lazy = LazySprite::create(size, true);
-                lazy->setAutoResize(true);
-                lazy->setPosition(pos);
-                if (std::filesystem::exists(cachePath)) {
-                    lazy->loadFromFile(utils::string::pathToString(cachePath), CCImage::kFmtPng, true);
-                } else {
-                    lazy->loadFromUrl(url, CCImage::kFmtPng, true);
-                    auto savePath = cachePath;
-                    async::spawn(web::WebRequest().get(url), [savePath](web::WebResponse response) {
-                        if (!response.ok()) {
-                            return;
-                        }
-                        if (auto body = response.string()) {
-                            std::filesystem::create_directories(savePath.parent_path());
-                            auto writeRes = utils::file::writeString(utils::string::pathToString(savePath), body.unwrap());
-                            (void)writeRes;
-                        }
-                    });
-                }
-                return lazy;
+            auto createNameplateSprite = [nameplate](CCSize size, CCPoint pos) {
+                return LazyNameplate::create(
+                    size, nameplate, {.loadingCircle = true, .autoResize = true, .position = pos});
             };
 
             if (m_compactMode) {
-                auto lazy = createNameplateSprite(
-                    {m_backgroundLayer->getScaledContentSize()},
-                    {m_backgroundLayer->getScaledContentSize().width / 2,
-                     m_backgroundLayer->getScaledContentSize().height / 2});
+                auto content = m_backgroundLayer->getScaledContentSize();
+                auto* lazy = createNameplateSprite(content, {content.width / 2, content.height / 2});
                 m_backgroundLayer->setOpacity(100);
                 m_backgroundLayer->addChild(lazy, -1);
 
@@ -231,9 +203,8 @@ class $modify(RLCommentCell, CommentCell) {
                     }
                 }
             } else {
-                auto lazy = createNameplateSprite(
-                    {m_backgroundLayer->getScaledContentSize() + CCSize(425, 425)},
-                    {-20, m_backgroundLayer->getScaledContentSize().height / 2});
+                auto* lazy = createNameplateSprite({m_backgroundLayer->getScaledContentSize() + CCSize(425, 425)},
+                                                   {-20, m_backgroundLayer->getScaledContentSize().height / 2});
                 m_backgroundLayer->setOpacity(150);
                 m_backgroundLayer->addChild(lazy, -1);
             }
@@ -262,120 +233,107 @@ class $modify(RLCommentCell, CommentCell) {
 
     void clearAllRoleBadges(RLUserId accountId) {
         m_fields->clear();
-        if (!m_mainLayer) [[likely]] { return; }
+        if (!m_mainLayer) [[likely]] {
+            return;
+        }
         rl::clearFallbackBadgesImpl(Ref(this), "comment");
         // remove any glow
         auto glowId = fmt::format("rl-comment-glow-{}", accountId);
-        if (auto glow = m_mainLayer->getChildByIDRecursive(glowId))
-            glow->removeFromParent();
+        if (auto glow = m_mainLayer->getChildByIDRecursive(glowId)) glow->removeFromParent();
     }
 
     void fetchUserRole(RLUserId accountId) {
         log::debug("Fetching role for comment user ID: {}", accountId);
         Ref<RLCommentCell> cellRef = this;  // commentcell ref
-        m_fields->m_fetchTask.spawn(
-            RLUserInfo::get(accountId),
-            [cellRef, accountId](Result<RLUserInfo> infoOrErr) {
-                // did this so it doesnt crash if the cell is deleted before
-                // response yea took me a while
-                if (!cellRef) {
-                    log::warn("CommentCell has been destroyed, skipping role update");
-                    return;
-                }
+        m_fields->m_fetchTask.spawn(RLUserInfo::get(accountId), [cellRef, accountId](Result<RLUserInfo> infoOrErr) {
+            // did this so it doesnt crash if the cell is deleted before
+            // response yea took me a while
+            if (!cellRef) {
+                log::warn("CommentCell has been destroyed, skipping role update");
+                return;
+            }
 
-                if (infoOrErr.isErr() || infoOrErr.unwrap().isEmptyUser()) {
-                    // log::warn("Server returned non-ok status: {}", response.code());
-                    if (infoOrErr.isErr())
-                        log::debug("Profile load failed: {}", infoOrErr.unwrapErr());
-                    else
-                        log::debug("User {} has no role/stars/planets", accountId);
-                    if (!cellRef) return;
-                    cellRef->clearAllRoleBadges(accountId);
-                    return;
-                }
+            if (infoOrErr.isErr() || infoOrErr.unwrap().isEmptyUser()) {
+                // log::warn("Server returned non-ok status: {}", response.code());
+                if (infoOrErr.isErr())
+                    log::debug("Profile load failed: {}", infoOrErr.unwrapErr());
+                else
+                    log::debug("User {} has no role/stars/planets", accountId);
+                if (!cellRef) return;
+                cellRef->clearAllRoleBadges(accountId);
+                return;
+            }
 
+            RLUserInfo info = std::move(infoOrErr).unwrap();
+            if (cellRef) {
+            }
+            cellRef->m_fields->init(info);
 
-                RLUserInfo info = std::move(infoOrErr).unwrap();
-                if (cellRef) {
+            // nameplate thing
+            bool validCell = cellRef && cellRef->m_mainLayer && cellRef->m_backgroundLayer;
+            const auto nameplate = info.nameplate;
+            if (validCell && nameplate != 0 && !CachedSettings::get()->disableNameplateInComment) {
+                if (cellRef->m_compactMode) {
+                    auto* lazy =
+                        LazyNameplate::create({cellRef->m_backgroundLayer->getScaledContentSize()}, nameplate, true);
+                    lazy->setAutoResize(true);
+                    lazy->setPosition({cellRef->m_backgroundLayer->getScaledContentSize().width / 2,
+                                       cellRef->m_backgroundLayer->getScaledContentSize().height / 2});
+                    cellRef->m_backgroundLayer->setOpacity(100);
+                    cellRef->m_backgroundLayer->addChild(lazy, -1);
 
-                }
-                cellRef->m_fields->init(info);
-
-                // nameplate thing
-                bool validCell = cellRef && cellRef->m_mainLayer && cellRef->m_backgroundLayer;
-                const auto nameplate = info.nameplate;
-                if (validCell && nameplate != 0 && !CachedSettings::get()->disableNameplateInComment) {
-                    std::string url = fmt::format(
-                        "{}/nameplates/banner/nameplate_{}.png",
-                        std::string(rl::BASE_API_URL),
-                        nameplate);
-                    if (cellRef->m_compactMode) {
-                        auto lazy = LazySprite::create(
-                            {cellRef->m_backgroundLayer->getScaledContentSize()},
-                            true);
-                        lazy->loadFromUrl(url, CCImage::kFmtPng, true);
-                        lazy->setAutoResize(true);
-                        lazy->setPosition(
-                            {cellRef->m_backgroundLayer->getScaledContentSize().width / 2,
-                             cellRef->m_backgroundLayer->getScaledContentSize().height / 2});
-                        cellRef->m_backgroundLayer->setOpacity(100);
-                        cellRef->m_backgroundLayer->addChild(lazy, -1);
-
-                        // add a background behind the comment text for better contrast with bright nameplates in compact mode
-                        if (!cellRef->m_mainLayer->getChildByID("rl-comment-bg")) {
-                            auto commentBg = NineSlice::create("square02_small.png");
-                            commentBg->setID("rl-comment-bg");
-                            auto commentText = cellRef->m_mainLayer->getChildByIDRecursive("comment-text-label");
-                            if (commentText) {
-                                commentBg->setInsets({5, 5, 5, 5});
-                                commentBg->setContentSize(commentText->getScaledContentSize() + CCSize(5, 0));
-                                commentBg->setPosition({commentText->getPosition().x - 2, commentText->getPosition().y});
-                                commentBg->setOpacity(150);
-                                commentBg->setAnchorPoint(commentText->getAnchorPoint());
-                                cellRef->m_mainLayer->addChild(commentBg, -1);
-                            } else {
-                                log::warn("CommentCell compress mode: comment-text-label not found, skipping text background for nameplate");
-                            }
+                    // add a background behind the comment text for better contrast with bright nameplates in compact mode
+                    if (!cellRef->m_mainLayer->getChildByID("rl-comment-bg")) {
+                        auto commentBg = NineSlice::create("square02_small.png");
+                        commentBg->setID("rl-comment-bg");
+                        auto commentText = cellRef->m_mainLayer->getChildByIDRecursive("comment-text-label");
+                        if (commentText) {
+                            commentBg->setInsets({5, 5, 5, 5});
+                            commentBg->setContentSize(commentText->getScaledContentSize() + CCSize(5, 0));
+                            commentBg->setPosition({commentText->getPosition().x - 2, commentText->getPosition().y});
+                            commentBg->setOpacity(150);
+                            commentBg->setAnchorPoint(commentText->getAnchorPoint());
+                            cellRef->m_mainLayer->addChild(commentBg, -1);
+                        } else {
+                            log::warn(
+                                "CommentCell compress mode: comment-text-label not found, skipping text background for "
+                                "nameplate");
                         }
-                    } else {
-                        auto lazy = LazySprite::create(
-                            {cellRef->m_backgroundLayer->getScaledContentSize() +
-                             CCSize(425, 425)},
-                            true);
-                        lazy->loadFromUrl(url, CCImage::kFmtPng, true);
-                        lazy->setAutoResize(true);
-                        lazy->setPosition(
-                            {-20,
-                             cellRef->m_backgroundLayer->getScaledContentSize().height / 2});
-                        cellRef->m_backgroundLayer->setOpacity(150);
-                        cellRef->m_backgroundLayer->addChild(lazy, -1);
                     }
-                } else if (!validCell && nameplate != 0) {
-                    log::debug("Skipping nameplate for account {} because CommentCell was removed or invalid", accountId);
+                } else {
+                    auto* lazy = LazyNameplate::create(
+                        {cellRef->m_backgroundLayer->getScaledContentSize() + CCSize(425, 425)}, nameplate, true);
+                    lazy->setAutoResize(true);
+                    lazy->setPosition({-20, cellRef->m_backgroundLayer->getScaledContentSize().height / 2});
+                    cellRef->m_backgroundLayer->setOpacity(150);
+                    cellRef->m_backgroundLayer->addChild(lazy, -1);
                 }
+            } else if (!validCell && nameplate != 0) {
+                log::debug("Skipping nameplate for account {} because CommentCell was removed or invalid", accountId);
+            }
 
-                if (!cellRef->m_mainLayer) {
-                    cellRef->m_fields->m_pendingRoleJson = info;
-                    cellRef->m_fields->m_pendingRoleAccountId = accountId;
-                }
+            if (!cellRef->m_mainLayer) {
+                cellRef->m_fields->m_pendingRoleJson = info;
+                cellRef->m_fields->m_pendingRoleAccountId = accountId;
+            }
 
-                log::debug(
-                    "User comment supporter={}, booster={}, classicMod={}, "
-                    "classicAdmin={}, leaderboardMod={}, platMod={}, platAdmin={}, "
-                    "nameplate={}",
-                    info.isSupporter,
-                    info.isBooster,
-                    info.isClassicMod,
-                    info.isClassicAdmin,
-                    info.isLeaderboardMod,
-                    info.isPlatMod,
-                    info.isPlatAdmin,
-                    info.nameplate);
+            log::debug(
+                "User comment supporter={}, booster={}, classicMod={}, "
+                "classicAdmin={}, leaderboardMod={}, platMod={}, platAdmin={}, "
+                "nameplate={}",
+                info.isSupporter,
+                info.isBooster,
+                info.isClassicMod,
+                info.isClassicAdmin,
+                info.isLeaderboardMod,
+                info.isPlatMod,
+                info.isPlatAdmin,
+                info.nameplate);
 
-                cellRef->loadBadgeForComment(accountId);
-                cellRef->applyCommentTextColor(accountId);
-                cellRef->applyStarGlow(accountId, info.stars, info.planets);
-            });
+            cellRef->loadBadgeForComment(accountId);
+            cellRef->applyCommentTextColor(accountId);
+            cellRef->applyStarGlow(accountId, info.stars, info.planets);
+        });
     }
 
     void loadBadgeForComment(RLUserId accountId) {
@@ -389,48 +347,40 @@ class $modify(RLCommentCell, CommentCell) {
 
     // show explanatory alert when a badge in a comment is tapped
     void onBadgeClicked(CCObject* sender) {
-        if (auto* btn = static_cast<CCMenuItemSpriteExtra*>(sender))
-            rl::showRoleInfoPopup(btn->getTag());
+        if (auto* btn = static_cast<CCMenuItemSpriteExtra*>(sender)) rl::showRoleInfoPopup(btn->getTag());
     }
 
     void applyStarGlow(RLUserId accountId, int stars, int planets) {
         // skip if no stars/planets
-        if (stars <= 0 && planets <= 0)
-            return;
+        if (stars <= 0 && planets <= 0) return;
         // global disable
         if (CachedSettings::get()->disableCommentGlow) {
             log::debug("Skipping star glow: global setting disabled");
             return;
         }
 
-        if (m_fields->nameplate != 0 &&
-            CachedSettings::get()->disableCommentGlowNameplate) {
+        if (m_fields->nameplate != 0 && CachedSettings::get()->disableCommentGlowNameplate) {
             if (!CachedSettings::get()->disableNameplateInComment) {
-                log::debug(
-                    "Skipping star glow for account {} due to nameplate and setting",
-                    accountId);
+                log::debug("Skipping star glow for account {} due to nameplate and setting", accountId);
                 return;
             }
         }
 
-        if (!m_mainLayer)
-            return;
+        if (!m_mainLayer) return;
 
-        if (m_accountComment)
-            return;  // no glow for account comments
+        if (m_accountComment) return;  // no glow for account comments
 
         auto glowId = fmt::format("rl-comment-glow-{}", accountId);
         // don't create duplicate glow
-        if (m_mainLayer->getChildByIDRecursive(glowId))
-            return;
+        if (m_mainLayer->getChildByIDRecursive(glowId)) return;
 
         auto glow = CCSprite::createWithSpriteFrameName("chest_glow_bg_001.png");
-        if (!glow)
-            return;
+        if (!glow) return;
 
         if (m_backgroundLayer && m_mainLayer) {
             auto glow = CCLayerGradient::create({135, 180, 255, 180}, {0, 0, 0, 0}, {1.f, 0.f});
-            glow->changeWidthAndHeight(m_backgroundLayer->getContentSize().width, m_backgroundLayer->getContentSize().height);
+            glow->changeWidthAndHeight(m_backgroundLayer->getContentSize().width,
+                                       m_backgroundLayer->getContentSize().height);
             glow->setID(glowId.c_str());
             m_mainLayer->addChild(glow, -2);
         }

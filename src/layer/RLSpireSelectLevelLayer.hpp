@@ -40,7 +40,7 @@ private:
     std::string m_pendingKey;
     int m_pendingLevelId = -1;
     double m_pendingTimeout = 0.0;
-    async::TaskHolder<web::WebResponse> m_fetchTask;
+    async::TaskHolder<Result<matjson::Value>> m_fetchTask;
     CCLayerColor* m_transitionLayer = nullptr;
     bool m_isRoomTransitionActive = false;
     bool m_didAdvanceRoom = false;

@@ -10,4 +10,5 @@ namespace rl {
 
     void setDialogObjectIcon(DialogLayer* dialog, int characterFrame);
     void setDialogObjectCustomIcon(DialogLayer* dialog, const std::string& frameName);
+    void setDialogObjectCustomIcon(DialogLayer* dialog, cocos2d::CCNode* icon);
 }

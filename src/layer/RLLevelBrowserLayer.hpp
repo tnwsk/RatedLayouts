@@ -2,14 +2,13 @@
 
 #include <Geode/Geode.hpp>
 #include <Geode/modify/GameLevelManager.hpp>
-#include <cue/ListNode.hpp>
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
+#include <cue/ListNode.hpp>
+#include <matjson.hpp>
 
 using namespace geode::prelude;
 
-class RLLevelBrowserLayer : public CCLayer,
-                            public LevelManagerDelegate,
-                            public SetIDPopupDelegate {
+class RLLevelBrowserLayer : public CCLayer, public LevelManagerDelegate, public SetIDPopupDelegate {
 public:
     enum class Mode {
         Featured = 1,
@@ -23,8 +22,9 @@ public:
 
     using ParamList = std::vector<std::pair<std::string, std::string>>;
 
-    static RLLevelBrowserLayer*
-    create(Mode mode, ParamList const& params = ParamList(), std::string const& title = "Rated Layouts");
+    static RLLevelBrowserLayer* create(Mode mode,
+                                       ParamList const& params = ParamList(),
+                                       std::string const& title = "Rated Layouts");
     bool init(GJSearchObject* object);
     void keyBackClicked() override;
 
@@ -42,22 +42,23 @@ public:
     void performSearchQuery(ParamList const& params);
 
 protected:
-    GJSearchObject* m_searchObject;
+    GJSearchObject* m_searchObject = nullptr;
     std::string m_title;
-    int m_totalLevels{0};
+    int m_totalLevels = 0;
 
-    cue::ListNode* m_listNode;
-    ScrollLayer* m_scrollLayer;
+    cue::ListNode* m_listNode = nullptr;
+    ScrollLayer* m_scrollLayer = nullptr;
     bool m_loading = false;
     bool m_needsLayout = false;
 
-    CCLabelBMFont* m_levelsLabel;
-    CCLabelBMFont* m_titleLabel;
-    LoadingSpinner* m_circle;
-    CCMenuItemSpriteExtra* m_prevButton;
-    CCMenuItemSpriteExtra* m_nextButton;
-    CCMenuItemSpriteExtra* m_refreshBtn;
+    CCLabelBMFont* m_levelsLabel = nullptr;
+    CCLabelBMFont* m_titleLabel = nullptr;
+    LoadingSpinner* m_spinner = nullptr;
+    CCMenuItemSpriteExtra* m_prevButton = nullptr;
+    CCMenuItemSpriteExtra* m_nextButton = nullptr;
+    CCMenuItemSpriteExtra* m_refreshBtn = nullptr;
 
+    // TODO: Make this actually do something?
     std::unordered_map<long long, GJGameLevel*> m_levelCache;
 
     // compact mode toggle
@@ -78,26 +79,29 @@ protected:
 
     Mode m_mode = Mode::Featured;
     ParamList m_modeParams;
-    async::TaskHolder<web::WebResponse> m_searchTask;
+    async::TaskHolder<Result<matjson::Value>> m_searchTask;
+    async::TaskHolder<web::WebResponse> m_searchTask2;
     async::TaskHolder<web::WebResponse> m_deleteAllSendsTask;
+
     ~RLLevelBrowserLayer() {
         m_searchTask.cancel();
+        m_searchTask2.cancel();
         m_deleteAllSendsTask.cancel();
-        auto glm = GameLevelManager::get();
+        auto* glm = GameLevelManager::get();
         if (glm && glm->m_levelManagerDelegate == this) {
             glm->m_levelManagerDelegate = nullptr;
         }
     }
 
     // UI: tabs and search input
-    TabButton* m_featuredTab;
-    TabButton* m_sentTab;
-    TabButton* m_searchTab;
+    TabButton* m_featuredTab = nullptr;
+    TabButton* m_sentTab = nullptr;
+    TabButton* m_searchTab = nullptr;
 
-    CCMenu* m_searchInputMenu;
-    geode::TextInput* m_searchInput;
-    CCMenuItemSpriteExtra* m_searchButton;
-    CCMenuItemSpriteExtra* m_clearButton;
+    CCMenu* m_searchInputMenu = nullptr;
+    geode::TextInput* m_searchInput = nullptr;
+    CCMenuItemSpriteExtra* m_searchButton = nullptr;
+    CCMenuItemSpriteExtra* m_clearButton = nullptr;
 
     CCNode* m_bgContainer = nullptr;
     CCNode* m_groundContainer = nullptr;
@@ -110,6 +114,13 @@ protected:
     CCMenuItemSpriteExtra* m_pageButton = nullptr;
     CCLabelBMFont* m_pageButtonLabel = nullptr;
 
+    void prepareForSearch() {
+        m_searchTask.cancel();
+        m_searchTask2.cancel();
+        m_levelCache.clear();
+        this->startLoading();
+    }
+
     // helpers
     void populateFromArray(CCArray* levels);
     void fetchLevelsForType(int type);
@@ -117,13 +128,14 @@ protected:
     void updatePageButton();
 
     void setupBackground();
-    void setupControls();
+    void setupControls(CCMenu* uiMenu);
     void applyModeFetch(bool force);
     int computeModeType() const;
     int parseModeParam(int fallback) const;
 
     void updatePagingFromJson(matjson::Value const& json);
     std::string extractLevelIDs(matjson::Value const& json) const;
+    void processFetchedLevelIDs(matjson::Value const& json, std::string const& emptyMessage);
     void processFetchedLevelIDs(std::string const& levelIDs, std::string const& emptyMessage);
 
     void presentSearchResults(web::WebResponse const& res);

@@ -218,8 +218,6 @@ struct greater_equal {
     }
 };
 
-}  // namespace cxprmap_detail
-
 template <typename Element, std::size_t N>
 class ConstexprMap {
 private:
@@ -324,6 +322,10 @@ public:
         return find(key) != end();
     }
 };
+
+}  // namespace cxprmap_detail
+
+using cxprmap_detail::ConstexprMap;
 
 template <typename Key, typename Value, std::size_t N>
 static constexpr auto cxpr_map(const std::pair<const Key, const Value> (&items)[N]) noexcept {

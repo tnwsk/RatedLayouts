@@ -283,8 +283,6 @@ bool RLDifficultyTotalPopup::init() {
     m_difficultyTask.spawn(
         req.get(std::string(rl::BASE_API_URL) + "/getDifficulty"),
         [self](web::WebResponse res) {
-            if (!self)
-                return;
             if (!res.ok()) {
                 if (self->m_spinner) {
                     self->m_spinner->removeFromParent();

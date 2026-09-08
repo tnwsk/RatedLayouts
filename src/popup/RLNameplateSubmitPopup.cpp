@@ -7,6 +7,7 @@
 #include "Geode/ui/TextInput.hpp"
 #include "Geode/utils/general.hpp"
 #include "RLConstants.hpp"
+#include "utils/RLArgon.hpp"
 #include "popup/RLAdminNameplatePopup.hpp"
 
 using namespace geode::prelude;
@@ -75,7 +76,8 @@ arc::Future<void> RLNameplateSubmitPopup::pickAndLoadPng() {
 
                 existing->removeFromParent();
 
-                auto replacement = LazySprite::create(size, false);
+                // TODO: Cache sprites here...
+                auto* replacement = LazySprite::create(size, false);
                 replacement->setAutoResize(true);
                 replacement->setPosition(position);
                 replacement->setAnchorPoint(anchor);
@@ -258,7 +260,7 @@ void RLNameplateSubmitPopup::onSubmit(CCObject* sender) {
     }
 
     auto accountId = GJAccountManager::get()->m_accountID;
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     if (token.empty()) {
         popupRef->showFailMessage("Argon token missing!");
         return;

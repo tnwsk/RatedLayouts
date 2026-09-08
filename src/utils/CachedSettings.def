@@ -4,6 +4,7 @@
 
 /// Takes a macro `X(NAME, TYPE, SETTING)`.
 #define RL_SAVED_SETTINGS(X)                                            \
+    X(enableExperimentalFeatures, bool, "enableExperimentalFeatures")   \
     X(rgbBackground, cocos2d::ccColor3B, "rgbBackground")               \
     X(backgroundType, int, "backgroundType")                            \
     X(notiScale, float, "notiScale")                                    \
@@ -26,6 +27,7 @@
     X(disableCommentGlowNameplate, bool, "disableCommentGlowNameplate") \
     X(disableMenuButton, bool, "disableMenuButton")                     \
     X(disableScrollbar, bool, "disableScrollbar")                       \
+    X(usePageLabelInShop, bool, "disableShopDots")                      \
     X(disableCreatorPoints, bool, "disableCreatorPoints")               \
     X(disableCreatorPointsToggle, bool, "disableCreatorPointsToggle")   \
     X(disableModInfo, bool, "disableModInfo")                           \
@@ -33,3 +35,13 @@
     X(disableRejectedLayouts, bool, "disableRejectedLayouts")           \
     X(disableRejectedLayoutsGlow, bool, "disableRejectedLayoutsGlow")   \
     X(disableFetchAverageDifficulty, bool, "disableFetchAverageDifficulty")
+
+/// Takes a macro `X(NAME, MODIDS...)`.
+#define RL_SAVED_MODS(X)                                \
+    X(badgify, "alphalaneous.badgify")                  \
+    X(badgified, "dasshu.badgified")                    \
+    X(better_progression, "itzkiba.better_progression") \
+    X(blur_api, "thesillydoggo.blur-api")               \
+    X(comment_emojis, "prevter.comment_emojis")         \
+    X(compact_lists, "cvolton.compact_lists")           \
+    X(draggable_popups, "undefined0.draggable-popups")

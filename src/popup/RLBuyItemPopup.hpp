@@ -1,6 +1,6 @@
 #pragma once
 
-#include "layer/RLShopLayer.hpp"
+#include "custom/RLNameplateItem.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <string>
@@ -8,6 +8,7 @@
 using namespace geode::prelude;
 
 class RLShopLayer;
+class RLShopLayer2;
 
 class RLBuyItemPopup : public Popup {
 protected:
@@ -26,7 +27,7 @@ protected:
     std::string m_iconUrl;
     int m_value = 0;  // cost in rubies
 
-    RLShopLayer* m_owner = nullptr;
+    CCLayer* m_owner = nullptr;
 
     void onBuy(CCObject* sender);
     void onCancel(CCObject* sender);
@@ -34,8 +35,8 @@ protected:
     void onProfile(CCObject* sender);
 
 public:
-    static RLBuyItemPopup* create(int itemId, int creatorId, const std::string& creatorUsername, const std::string& iconUrl, int value, RLShopLayer* owner = nullptr);
-    static RLBuyItemPopup* create(int itemId) {
-        return create(itemId, 0, std::string(), std::string(), 0, nullptr);
-    }
+    static RLBuyItemPopup* create(rl::RLNameplateInfo const& info);
+    static RLBuyItemPopup* create(rl::RLNameplateInfo const& info, RLShopLayer* owner);
+    static RLBuyItemPopup* create(rl::RLNameplateInfo const& info, RLShopLayer2* owner);
+    static RLBuyItemPopup* create(int itemId) { return create({.index = itemId}); }
 };

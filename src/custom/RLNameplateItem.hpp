@@ -1,0 +1,44 @@
+#pragma once
+
+#include <Geode/Geode.hpp>
+#include <map>
+#include <string>
+
+using namespace geode::prelude;
+
+namespace rl {
+
+struct RLNameplateInfo {
+    int index = 0;
+    int price = 0;      // cost in rubies
+    int creatorId = 0;  // account id
+    std::string creatorUsername;
+    std::string iconUrl;  // remote icon path
+};
+
+class RLNameplateItem {
+public:
+    static CCMenuItemSpriteExtra* create(int index,
+                                         int value,
+                                         int creatorId,
+                                         const std::string& creatorUsername,
+                                         const std::string& iconUrl,
+                                         CCObject* target,
+                                         SEL_MenuHandler selector);
+    
+    static CCMenuItemSpriteExtra* create(RLNameplateInfo const& info,
+                                         CCObject* target,
+                                         SEL_MenuHandler selector);
+
+    static bool getInfo(int index, RLNameplateInfo* out);
+
+    // ownership persistence
+    static bool isOwned(int index);
+    static bool markOwned(int index);  // add and persist
+    static std::vector<int> getOwnedItems();
+
+private:
+    static std::map<int, RLNameplateInfo> s_items;
+};
+
+}  // namespace rl

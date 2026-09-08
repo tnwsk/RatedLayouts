@@ -1,10 +1,12 @@
 #pragma once
 
+#include <vector>
 #include "Geode/cocos/cocoa/CCObject.h"
 #include <Geode/Geode.hpp>
 #include <Geode/binding/CCCounterLabel.hpp>
-#include <vector>
 #include <cue/DropdownNode.hpp>
+#include "custom/RLNameplateItem.hpp"
+#include "layer/RLShopLayer2.hpp"
 
 using namespace geode::prelude;
 
@@ -16,24 +18,19 @@ protected:
     void onEnterTransitionDidFinish() override;
 
 public:
+    using ShopItem = rl::RLNameplateInfo;
     static RLShopLayer* create();
     void updateShopPage();
     void refreshRubyLabel();
 
 private:
-    struct ShopItem {
-        int idx;
-        int price;
-        int creatorId;
-        std::string creatorUsername;
-        std::string iconUrl;
-    };
     void onResetRubies();
     void onUnequipNameplate();
     void onSubmitNameplate();
     void onForm();
 
     void onShopkeeper(CCObject* sender);
+    void onShopkeeperDialog(CCObject* sender);
     void onBuyItem(CCObject* sender);
     void onRedeemLayer(CCObject* sender);
 
@@ -54,11 +51,14 @@ private:
     cue::DropdownNode* m_dropdownMenu = nullptr;
     int m_pendingDropdownAction = 0;
 
+    // Shopkeeper
+    CCMenuItemSpriteExtra* m_shopkeeper = nullptr;
+
     // data
     std::vector<ShopItem> m_shopItems;
     int m_shopPage = 0;  // zero-based
-    int m_totalPages = 1;
 
     // banner from server now
     void loadShopPage(int page);
+    void preloadShopPage(int page);
 };

@@ -1,6 +1,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/binding/UploadActionPopup.hpp>
 #include "Geode/utils/async.hpp"
+#include <matjson.hpp>
 
 using namespace geode::prelude;
 
@@ -16,11 +17,12 @@ private:
 
 protected:
     UploadActionPopup* m_uploadPopup = nullptr;
-    async::TaskHolder<Result<std::string>> m_authTask;
-    async::TaskHolder<web::WebResponse> m_getAccessTask;
+    //async::TaskHolder<Result<std::string>> m_authTask;
+    //async::TaskHolder<web::WebResponse> m_getAccessTask;
+    async::TaskHolder<Result<matjson::Value>> m_authTask;
 
     ~RLDonationPopup() {
         m_authTask.cancel();
-        m_getAccessTask.cancel();
+        //m_getAccessTask.cancel();
     }
 };

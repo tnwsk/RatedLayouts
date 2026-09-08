@@ -1,12 +1,13 @@
 #include "popup/RLAddCodePopup.hpp"
 #include "RLConstants.hpp"
 #include "RLNetworkUtils.hpp"
+#include "utils/RLArgon.hpp"
 #include <fmt/format.h>
 #include <Geode/binding/UploadActionPopup.hpp>
 #include "Geode/utils/general.hpp"
 
 using namespace geode::prelude;
-//using namespace rl;
+using namespace rl;
 
 RLAddCodePopup* RLAddCodePopup::create(const std::string& code, const std::string& reward, long long id, std::function<void()> onSuccess) {
     auto popup = new RLAddCodePopup();
@@ -79,7 +80,7 @@ void RLAddCodePopup::onAdd(CCObject* sender) {
         return;
     }
 
-    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    auto token = RLArgon::token();
     if (token.empty()) {
         upopup->showFailMessage("Argon token missing");
         return;

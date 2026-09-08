@@ -1,0 +1,23 @@
+#pragma once
+
+#include <string_view>
+#include <fmt/format.h>
+
+namespace rl {
+
+inline constexpr int RL_VERSION_MAJOR = @RL_VERSION_MAJOR@;
+inline constexpr int RL_VERSION_MINOR = @RL_VERSION_MINOR@;
+inline constexpr int RL_VERSION_PATCH = @RL_VERSION_PATCH@;
+inline constexpr std::string_view RL_VERSION_STRING = "@RL_VERSION@";
+
+inline std::string_view getLastVersionString() {
+    static const std::string last = [] {
+        if (RL_VERSION_PATCH > 1)
+            return fmt::format("{}.{}.{}", RL_VERSION_MAJOR, RL_VERSION_MINOR, RL_VERSION_PATCH - 1);
+        // TODO: Do some other kinda lookup here...
+        return "???";
+    }();
+    return last;
+}
+
+} // namespace rl

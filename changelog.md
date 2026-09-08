@@ -1,3 +1,24 @@
+# v1.0.17
+
+#### Some internal fixes:
+
+- Migrate from badgify to badgified (wow).
+- Cache user info, credits, and more to avoid delayed lookups.
+- Improve sprite loading times, preload shop items.
+- Account data (sparks, planets, etc.) is cached by account id.
+- Added zip compression for cached data. 
+- Fixed PlayLayer memory leak.
+- Improved level load times.
+- Fixed RNG not being in the correct bounds.
+
+#### As well as some UX tweaks:
+
+- Added **Enable Experimental Features** in the settings.
+- Add some (experimental) fixes for loading causing the game to freeze.
+- Changes to background settings now update in real time.
+- Animated shop and shopkeeper.
+- Added some big badge icons.
+
 # v1.0.16
 
 #### Internal fixes

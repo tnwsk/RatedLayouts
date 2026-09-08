@@ -5,10 +5,12 @@
 #include "layer/RLSpireSelectLevelLayer.hpp"
 #include "RLConstants.hpp"
 #include "RLRubyUtils.hpp"
+#include "utils/RLData.hpp"
 #include <unordered_set>
 #include <filesystem>
 
 using namespace geode::prelude;
+using namespace rl;
 
 static std::filesystem::path spireCompletedLevelPath() {
     return dirs::getModsSaveDir() / Mod::get()->getID() / "spire_completed_levels.json";
@@ -418,7 +420,7 @@ void RLSpireSelectLevelLayer::onInfoClick(CCObject*) {
         "<cf>The Spire</c> is tower-themed <co>Platformer-focus</c> user created <cl>Rated Layouts</c> levels.\n\n"
         "Explore the Spire and find forsaken lore beyond the <cp>Cosmos</c>.\n\n"
         "Each <co>room</c> contains <cl>5 platformer layouts</c>. Complete them to unlock the next room, when you completed a room, you are rewarded <cr>1000 rubies</c>.\n\n"
-        "These levels are hand-picked by <cf>ArcticWoof</c> and usually relates to <cf>The Spire</c> and it's <cr>lore</c>.\n\n"
+        "These levels are hand-picked usually related to <cf>The Spire</c> and it's <cr>lore</c>.\n\n"
         "### <cg>Check out the Spire regularly for new rooms and levels!</c>",
         "OK")
         ->show();
@@ -426,27 +428,16 @@ void RLSpireSelectLevelLayer::onInfoClick(CCObject*) {
 
 void RLSpireSelectLevelLayer::fetchSpireLevels() {
     Ref<RLSpireSelectLevelLayer> self = this;
-    m_fetchTask.spawn(web::WebRequest()
-                          .param("index", numToString(m_spireRoomIndex))
-                          .get(std::string(rl::BASE_API_URL) + "/getSpireLevels"),
-        [self](web::WebResponse const& res) {
-            if (!self) return;
-
-            if (!res.ok()) {
-                Notification::create("Failed to load spire levels", NotificationIcon::Warning)->show();
+    std::string location = fmt::format("getSpireLevels?index={}", m_spireRoomIndex);
+    m_fetchTask.spawn(
+        LocalEndpoint::get(std::move(location)),
+        [self](Result<matjson::Value> res) {
+            if (res.isErr()) {
+                Notification::create(res.unwrapErr(), NotificationIcon::Warning)->show();
                 self->keyBackClicked();
                 return;
             }
-
-            auto jsonRes = res.json();
-            if (!jsonRes) {
-                Notification::create("Bad spire level data", NotificationIcon::Warning)->show();
-                self->keyBackClicked();
-                return;
-            }
-
-            auto json = jsonRes.unwrap();
-            self->applySpireLevelsJson(json);
+            self->applySpireLevelsJson(res.unwrap());
         });
 }
 
@@ -461,10 +452,8 @@ void RLSpireSelectLevelLayer::applySpireLevelsJson(matjson::Value const& json) {
     bgIndex = std::clamp(bgIndex, 0, 9);
 
     auto winSize = CCDirector::sharedDirector()->getWinSize();
-
-    char bgNameBuf[64];
-    std::sprintf(bgNameBuf, "game_bg_%02d_001.png", bgIndex);
-    m_bg = cue::RepeatingBackground::create(bgNameBuf, .75f, cue::RepeatMode::Both);
+    std::string bgName = fmt::format("game_bg_{:02d}_001.png", bgIndex);
+    m_bg = cue::RepeatingBackground::create(bgName.c_str(), .75f, cue::RepeatMode::Both);
     if (m_bg) {
         m_bg->setSpeed(0.f);
         m_bg->setColor({0, 50, 100});

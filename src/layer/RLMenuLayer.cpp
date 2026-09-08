@@ -19,6 +19,7 @@
 #include "RLConstants.hpp"
 #include "RLLayerBackground.hpp"
 #include "Geode/ui/Popup.hpp"
+#include "popup/PeekSettingsPopup.hpp"
 #include "popup/RLAchievementsPopup.hpp"
 #include "popup/RLAddDialogue.hpp"
 #include "popup/RLNewsAnnouncementPopup.hpp"
@@ -35,67 +36,87 @@
 #include "popup/RLQueueLevelPopup.hpp"
 #include "RLRubyUtils.hpp"
 #include "utils/CachedSettings.hpp"
-
-struct ModInfo {
-    std::string message;
-    std::string status;
-    std::string serverVersion;
-    std::string modVersion;
-};
-
-static arc::Future<std::optional<ModInfo>> fetchModInfoAsync() {
-    log::debug("Fetching mod info from API");
-    co_return co_await []() -> arc::Future<std::optional<ModInfo>> {
-        auto req = web::WebRequest();
-        auto response = co_await req.get(std::string(rl::BASE_API_URL) + "/v1/");
-        if (!response.ok()) {
-            log::warn("Failed to fetch mod info from server");
-            co_return std::nullopt;
-        }
-
-        auto jsonRes = response.json();
-        if (!jsonRes) {
-            log::warn("Failed to parse mod info JSON");
-            co_return std::nullopt;
-        }
-
-        auto json = jsonRes.unwrap();
-        ModInfo info;
-
-        if (json.contains("message")) {
-            if (auto m = json["message"].asString(); m)
-                info.message = m.unwrap();
-        }
-        if (json.contains("status")) {
-            if (auto s = json["status"].asString(); s)
-                info.status = s.unwrap();
-        }
-        if (json.contains("serverVersion")) {
-            if (auto sv = json["serverVersion"].asString(); sv)
-                info.serverVersion = sv.unwrap();
-        }
-        if (json.contains("modVersion")) {
-            if (auto mv = json["modVersion"].asString(); mv)
-                info.modVersion = mv.unwrap();
-        }
-
-        log::debug(
-            "ModInfo fetched: status={}, serverVersion={}, modVersion={}, "
-            "message={}",
-            info.status,
-            info.serverVersion,
-            info.modVersion,
-            info.message);
-        co_return info;
-    }();
-}
+#include "utils/Listeners.hpp"
+#include "utils/RLData.hpp"
+#include "utils/StartupFunctions.hpp"
 
 using namespace geode::prelude;
 using namespace rl;
 
+namespace {
+struct ModInfo {
+    std::string message;
+    std::string status;
+    std::string serverVersion;
+    std::optional<VersionInfo> modVersion;
+};
+}  // namespace
+
+static arc::Future<std::optional<ModInfo>> fetchModInfoAsync() {
+    static std::optional<ModInfo> prevInfo = std::nullopt;
+    if (prevInfo.has_value()) co_return prevInfo;
+
+    log::debug("Fetching mod info from API");
+    auto req = web::WebRequest();
+    auto response = co_await req.get(std::string(rl::BASE_API_URL) + "/v1/");
+
+    if (!response.ok()) {
+        log::warn("Failed to fetch mod info from server");
+        co_return std::nullopt;
+    }
+
+    auto jsonRes = response.json();
+    if (!jsonRes) {
+        log::warn("Failed to parse mod info JSON");
+        co_return std::nullopt;
+    }
+
+    auto json = jsonRes.unwrap();
+    ModInfo info{};
+    bool shouldSave = true;
+
+    if (json.contains("message")) {
+        if (auto m = json["message"].asString()) info.message = std::move(m).unwrap();
+    }
+    if (json.contains("status")) {
+        if (auto s = json["status"].asString())
+            info.status = std::move(s).unwrap();
+        else
+            shouldSave = false;
+    }
+    if (json.contains("serverVersion")) {
+        if (auto sv = json["serverVersion"].asString())
+            info.serverVersion = std::move(sv).unwrap();
+        else
+            shouldSave = false;
+    }
+    if (json.contains("modVersion")) {
+        if (auto mv = json["modVersion"].asString()) {
+            auto mvOrErr = VersionInfo::parse(mv.unwrap());
+            if (mvOrErr.isOk())
+                info.modVersion = mvOrErr.unwrap();
+            else {
+                shouldSave = false;
+                log::error(
+                    "Could not parse mod version '{}': {}", mv.unwrap(), mvOrErr.unwrapErr());
+            }
+        }
+    }
+
+    if (shouldSave) prevInfo = info;
+
+    log::debug(
+        "ModInfo fetched: status={}, serverVersion={}, modVersion={}, "
+        "message={}",
+        info.status,
+        info.serverVersion,
+        info.modVersion ? info.modVersion->toVString() : "",
+        info.message);
+    co_return info;
+}
+
 bool RLMenuLayer::init() {
-    if (!CCLayer::init())
-        return false;
+    if (!CCLayer::init()) return false;
 
     // quick achievements for custom bg
     if (CachedSettings::get()->backgroundType != 1) {
@@ -114,9 +135,7 @@ bool RLMenuLayer::init() {
         }
     }
 
-    // create if moving bg disabled
-    rl::addLayerBackground(this);
-
+    setupBGAndListeners();
     addSideArt(this, SideArt::All, SideArtStyle::LayerGray, false);
 
     auto backMenu = CCMenu::create();
@@ -140,10 +159,8 @@ bool RLMenuLayer::init() {
     auto mainMenu = CCMenu::create();
     mainMenu->setPosition({winSize.width / 2, winSize.height / 2 - 10});
     mainMenu->setContentSize({400.f, 240.f});
-    mainMenu->setLayout(RowLayout::create()
-            ->setGap(10.f)
-            ->setGrowCrossAxis(true)
-            ->setCrossAxisOverflow(false));
+    mainMenu->setLayout(
+        RowLayout::create()->setGap(10.f)->setGrowCrossAxis(true)->setCrossAxisOverflow(false));
 
     this->addChild(mainMenu);
 
@@ -151,57 +168,53 @@ bool RLMenuLayer::init() {
     title->setPosition({winSize.width / 2, winSize.height / 2 + 120});
     this->addChild(title);
 
-    auto featuredSpr =
-        CCSprite::createWithSpriteFrameName("RL_featured01.png"_spr);
+    auto featuredSpr = CCSprite::createWithSpriteFrameName("RL_featured01.png"_spr);
     auto featuredItem = CCMenuItemSpriteExtra::create(
         featuredSpr, this, menu_selector(RLMenuLayer::onFeaturedLayouts));
     featuredItem->setID("featured-button");
     mainMenu->addChild(featuredItem);
 
-    auto leaderboardSpr =
-        CCSprite::createWithSpriteFrameName("RL_leaderboard01.png"_spr);
+    auto leaderboardSpr = CCSprite::createWithSpriteFrameName("RL_leaderboard01.png"_spr);
     auto leaderboardItem = CCMenuItemSpriteExtra::create(
         leaderboardSpr, this, menu_selector(RLMenuLayer::onLeaderboard));
     leaderboardItem->setID("leaderboard-button");
     mainMenu->addChild(leaderboardItem);
 
     // gauntlet
-    auto gauntletSpr =
-        CCSprite::createWithSpriteFrameName("RL_gauntlets01.png"_spr);
+    auto gauntletSpr = CCSprite::createWithSpriteFrameName("RL_gauntlets01.png"_spr);
     auto gauntletItem = CCMenuItemSpriteExtra::create(
         gauntletSpr, this, menu_selector(RLMenuLayer::onLayoutGauntlets));
     gauntletItem->setID("gauntlet-button");
     mainMenu->addChild(gauntletItem);
 
     // spire coming soon
-    auto spireSpr =
-        CCSprite::createWithSpriteFrameName("RL_spire01.png"_spr);
-    auto spireItem = CCMenuItemSpriteExtra::create(
-        spireSpr, this, menu_selector(RLMenuLayer::onLayoutSpire));
+    auto spireSpr = CCSprite::createWithSpriteFrameName("RL_spire01.png"_spr);
+    auto spireItem =
+        CCMenuItemSpriteExtra::create(spireSpr, this, menu_selector(RLMenuLayer::onLayoutSpire));
     spireItem->setID("spire-button");
     mainMenu->addChild(spireItem);
 
     auto sentSpr = CCSprite::createWithSpriteFrameName("RL_sent01.png"_spr);
-    auto sentItem = CCMenuItemSpriteExtra::create(
-        sentSpr, this, menu_selector(RLMenuLayer::onSentLayouts));
+    auto sentItem =
+        CCMenuItemSpriteExtra::create(sentSpr, this, menu_selector(RLMenuLayer::onSentLayouts));
     sentItem->setID("sent-layouts-button");
     mainMenu->addChild(sentItem);
 
     auto searchSpr = CCSprite::createWithSpriteFrameName("RL_search01.png"_spr);
-    auto searchItem = CCMenuItemSpriteExtra::create(
-        searchSpr, this, menu_selector(RLMenuLayer::onSearchLayouts));
+    auto searchItem =
+        CCMenuItemSpriteExtra::create(searchSpr, this, menu_selector(RLMenuLayer::onSearchLayouts));
     searchItem->setID("search-layouts-button");
     mainMenu->addChild(searchItem);
 
     auto dailySpr = CCSprite::createWithSpriteFrameName("RL_daily01.png"_spr);
-    auto dailyItem = CCMenuItemSpriteExtra::create(
-        dailySpr, this, menu_selector(RLMenuLayer::onDailyLayouts));
+    auto dailyItem =
+        CCMenuItemSpriteExtra::create(dailySpr, this, menu_selector(RLMenuLayer::onDailyLayouts));
     dailyItem->setID("daily-layouts-button");
     mainMenu->addChild(dailyItem);
 
     auto weeklySpr = CCSprite::createWithSpriteFrameName("RL_weekly01.png"_spr);
-    auto weeklyItem = CCMenuItemSpriteExtra::create(
-        weeklySpr, this, menu_selector(RLMenuLayer::onWeeklyLayouts));
+    auto weeklyItem =
+        CCMenuItemSpriteExtra::create(weeklySpr, this, menu_selector(RLMenuLayer::onWeeklyLayouts));
     weeklyItem->setID("weekly-layouts-button");
     mainMenu->addChild(weeklyItem);
 
@@ -211,8 +224,7 @@ bool RLMenuLayer::init() {
     monthlyItem->setID("monthly-layouts-button");
     mainMenu->addChild(monthlyItem);
 
-    CCSprite* unknownSpr =
-        CCSpriteGrayscale::createWithSpriteFrameName("RL_unknownBtn.png"_spr);
+    CCSprite* unknownSpr = CCSpriteGrayscale::createWithSpriteFrameName("RL_unknownBtn.png"_spr);
     auto unknownItem = CCMenuItemSpriteExtra::create(
         unknownSpr, this, menu_selector(RLMenuLayer::onUnknownButton));
     unknownItem->setID("unknown-button");
@@ -233,24 +245,23 @@ bool RLMenuLayer::init() {
     infoMenu->addChild(infoButton);
 
     // queue button
-    auto queueSpr = rl::isUserSupporter() ? CCSprite::createWithSpriteFrameName("RL_queue01.png"_spr) : CCSpriteGrayscale::createWithSpriteFrameName("RL_queue01.png"_spr);
+    auto queueSpr = rl::isUserSupporter()
+                        ? CCSprite::createWithSpriteFrameName("RL_queue01.png"_spr)
+                        : CCSpriteGrayscale::createWithSpriteFrameName("RL_queue01.png"_spr);
     if (queueSpr) {
         queueSpr->setScale(0.7f);
         auto queueBtn = CCMenuItemSpriteExtra::create(
             queueSpr, this, menu_selector(RLMenuLayer::onQueueButton));
-        queueBtn->setPosition(
-            {infoButton->getPositionX() + 40, infoButton->getPositionY()});
+        queueBtn->setPosition({infoButton->getPositionX() + 40, infoButton->getPositionY()});
         infoMenu->addChild(queueBtn);
     }
 
     // discord thingy
-    auto discordIconSpr =
-        CCSprite::createWithSpriteFrameName("RL_discord01.png"_spr);
+    auto discordIconSpr = CCSprite::createWithSpriteFrameName("RL_discord01.png"_spr);
     discordIconSpr->setScale(0.7f);
     auto discordIconBtn = CCMenuItemSpriteExtra::create(
         discordIconSpr, this, menu_selector(RLMenuLayer::onDiscordButton));
-    discordIconBtn->setPosition(
-        {infoButton->getPositionX(), infoButton->getPositionY() + 40});
+    discordIconBtn->setPosition({infoButton->getPositionX(), infoButton->getPositionY() + 40});
     infoMenu->addChild(discordIconBtn);
 
     // news button above discord
@@ -259,19 +270,16 @@ bool RLMenuLayer::init() {
     announceSpr->setScale(0.7f);
     auto announceBtn = CCMenuItemSpriteExtra::create(
         announceSpr, this, menu_selector(RLMenuLayer::onAnnouncementButton));
-    announceBtn->setPosition(
-        {infoButton->getPositionX(), infoButton->getPositionY() + 80});
+    announceBtn->setPosition({infoButton->getPositionX(), infoButton->getPositionY() + 80});
     infoMenu->addChild(announceBtn);
     m_newsIconBtn = announceBtn;
 
-    auto achievementSpr =
-        CCSprite::createWithSpriteFrameName("RL_achievements01.png"_spr);
+    auto achievementSpr = CCSprite::createWithSpriteFrameName("RL_achievements01.png"_spr);
     achievementSpr->setScale(0.7f);
     auto achievementItem = CCMenuItemSpriteExtra::create(
         achievementSpr, this, menu_selector(RLMenuLayer::onAchievementsButton));
     achievementItem->setID("achievements-button");
-    achievementItem->setPosition(
-        {infoButton->getPositionX(), infoButton->getPositionY() + 120});
+    achievementItem->setPosition({infoButton->getPositionX(), infoButton->getPositionY() + 120});
     infoMenu->addChild(achievementItem);
 
     // news button above discord
@@ -280,14 +288,12 @@ bool RLMenuLayer::init() {
     browserSpr->setScale(0.7f);
     auto browserBtn = CCMenuItemSpriteExtra::create(
         browserSpr, this, menu_selector(RLMenuLayer::onBrowserButton));
-    browserBtn->setPosition(
-        {infoButton->getPositionX(), infoButton->getPositionY() + 160});
+    browserBtn->setPosition({infoButton->getPositionX(), infoButton->getPositionY() + 160});
     infoMenu->addChild(browserBtn);
     m_newsIconBtn = browserBtn;
 
     // @geode-ignore(unknown-resource)
-    auto badgeSpr =
-        CCSprite::createWithSpriteFrameName("geode.loader/updates-failed.png");
+    auto badgeSpr = CCSprite::createWithSpriteFrameName("geode.loader/updates-failed.png");
     if (badgeSpr) {
         // position top-right of the icon
         auto size = announceSpr->getContentSize();
@@ -300,38 +306,27 @@ bool RLMenuLayer::init() {
 
     // check server announcement id and set badge visibility
     Ref<RLMenuLayer> self = this;
-    m_announcementTask.spawn(
-        web::WebRequest().get(std::string(rl::BASE_API_URL) + "/getAnnouncement"),
-        [self](web::WebResponse const& res) {
-            if (!self)
-                return;
-            if (!res.ok())
-                return;
-            auto jsonRes = res.json();
-            if (!jsonRes)
-                return;
-            auto json = jsonRes.unwrap();
-            int id = 0;
-            if (json.contains("id")) {
-                if (auto i = json["id"].as<int>(); i)
-                    id = i.unwrap();
-            }
-            int saved = Mod::get()->getSavedValue<int>("announcementId");
-            if (id && id != saved) {
-                if (self->m_newsBadge)
-                    self->m_newsBadge->setVisible(true);
-                Mod::get()->setSavedValue<int>("announcementId", id);
-            } else {
-                if (self->m_newsBadge)
-                    self->m_newsBadge->setVisible(false);
-            }
-        });
+    m_announcementTask.spawn(LocalEndpoint::get("getAnnouncement"),
+                             [self](Result<matjson::Value> res) {
+        if (!self || res.isErr()) return;
+        auto json = std::move(res).unwrap();
+        int id = 0;
+        if (json.contains("id")) {
+            if (auto i = json["id"].as<int>(); i) id = i.unwrap();
+        }
+        int saved = Mod::get()->getSavedValue<int>("announcementId");
+        if (id && id != saved) {
+            if (self->m_newsBadge) self->m_newsBadge->setVisible(true);
+            Mod::get()->setSavedValue<int>("announcementId", id);
+        } else {
+            if (self->m_newsBadge) self->m_newsBadge->setVisible(false);
+        }
+    });
 
     this->addChild(infoMenu);
 
     // credits button at the bottom right
-    auto creditButtonSpr =
-        CCSprite::createWithSpriteFrameName("RL_credits01.png"_spr);
+    auto creditButtonSpr = CCSprite::createWithSpriteFrameName("RL_credits01.png"_spr);
     creditButtonSpr->setScale(0.7f);
     auto creditButton = CCMenuItemSpriteExtra::create(
         creditButtonSpr, this, menu_selector(RLMenuLayer::onCreditsButton));
@@ -339,38 +334,51 @@ bool RLMenuLayer::init() {
     infoMenu->addChild(creditButton);
 
     // supporter button left side of the credits
-    auto supportButtonSpr =
-        CCSprite::createWithSpriteFrameName("RL_support01.png"_spr);
+    auto supportButtonSpr = CCSprite::createWithSpriteFrameName("RL_support01.png"_spr);
     supportButtonSpr->setScale(0.7f);
     auto supportButton = CCMenuItemSpriteExtra::create(
         supportButtonSpr, this, menu_selector(RLMenuLayer::onSupporterButton));
-    supportButton->setPosition(
-        {creditButton->getPositionX(), creditButton->getPositionY() + 40});
+    supportButton->setPosition({creditButton->getPositionX(), creditButton->getPositionY() + 40});
     infoMenu->addChild(supportButton);
 
     // demonlist
-    auto demonListSpr =
-        CCSpriteGrayscale::createWithSpriteFrameName("RL_demonList01.png"_spr);
+    auto demonListSpr = CCSpriteGrayscale::createWithSpriteFrameName("RL_demonList01.png"_spr);
     demonListSpr->setScale(0.7f);
     auto demonListBtn = CCMenuItemSpriteExtra::create(
         demonListSpr, this, menu_selector(RLMenuLayer::onDemonListButton));
-    demonListBtn->setPosition(
-        {creditButton->getPositionX(), creditButton->getPositionY() + 80});
+    demonListBtn->setPosition({creditButton->getPositionX(), creditButton->getPositionY() + 80});
     infoMenu->addChild(demonListBtn);
 
     // shop
-    auto shopSpr = CCSprite::createWithSpriteFrameName("RL_shop01.png"_spr);
-    shopSpr->setScale(0.7f);
-    auto shopBtn = CCMenuItemSpriteExtra::create(
-        shopSpr, this, menu_selector(RLMenuLayer::onShopButton));
-    shopBtn->setPosition(
-        {creditButton->getPositionX(), creditButton->getPositionY() + 120});
+    CCMenuItemSpriteExtra* shopBtn = nullptr;
+    if (RLShopLayer2::shouldEnableShopNav()) {
+        rl::ShopLayer_prefetch(); // Try loading all the pages.
+        auto* shopSpr = CCSprite::createWithSpriteFrameName("RL_shop01.png"_spr);
+        shopSpr->setScale(0.7f);
+        shopBtn =
+            CCMenuItemSpriteExtra::create(shopSpr, this, menu_selector(RLMenuLayer::onShopButton2));
+    } else {
+        auto* shopSpr = CCSpriteGrayscale::createWithSpriteFrameName("RL_shop01.png"_spr);
+        shopSpr->setScale(0.7f);
+        shopBtn = CCMenuItemSpriteExtra::create(
+            shopSpr, this, menu_selector(RLMenuLayer::onShopButton2Fail));
+    }
+    shopBtn->setPosition({creditButton->getPositionX(), creditButton->getPositionY() + 120});
     infoMenu->addChild(shopBtn);
+
+#if RL_DEV && 0
+    // shop old
+    auto shopSpr1 = CCSprite::createWithSpriteFrameName("RL_shop01.png"_spr);
+    shopSpr1->setScale(0.7f);
+    auto shopBtn1 =
+        CCMenuItemSpriteExtra::create(shopSpr1, this, menu_selector(RLMenuLayer::onShopButton));
+    shopBtn1->setPosition({creditButton->getPositionX() - 40, creditButton->getPositionY() + 120});
+    infoMenu->addChild(shopBtn1);
+#endif
 
     // button bob
     if (rl::isUserHasPerms() || rl::isUserSupporter() || rl::isUserOwner()) {
-        auto addDiagloueBtnSpr =
-            CCSprite::createWithSpriteFrameName("RL_bobBtn01.png"_spr);
+        auto addDiagloueBtnSpr = CCSprite::createWithSpriteFrameName("RL_bobBtn01.png"_spr);
         addDiagloueBtnSpr->setScale(0.7f);
         auto addDialogueBtn = CCMenuItemSpriteExtra::create(
             addDiagloueBtnSpr, this, menu_selector(RLMenuLayer::onSecretDialogueButton));
@@ -405,8 +413,7 @@ bool RLMenuLayer::init() {
         modInfoBg->addChild(m_gdServerLabel);
 
         std::string modVersionStr = Mod::get()->getVersion().toVString();
-        m_modVersionLabel =
-            CCLabelBMFont::create(modVersionStr.c_str(), "bigFont.fnt");
+        m_modVersionLabel = CCLabelBMFont::create(modVersionStr.c_str(), "bigFont.fnt");
         m_modVersionLabel->setColor({255, 150, 0});
         m_modVersionLabel->setScale(0.3f);
         m_modVersionLabel->setPosition({80.f, 30.f});
@@ -421,14 +428,14 @@ bool RLMenuLayer::init() {
         this->addChild(modInfoBg, 10);
 
         // button to collapse the mod info
-        auto collapseBtnSpr = CCSprite::createWithSpriteFrameName(
-            "PBtn_Arrow_001.png");
+        auto collapseBtnSpr = CCSprite::createWithSpriteFrameName("PBtn_Arrow_001.png");
         if (isCollapsed) {
             collapseBtnSpr->setRotation(180.f);
         }
         auto collapseBtn = CCMenuItemSpriteExtra::create(
             collapseBtnSpr, this, menu_selector(RLMenuLayer::onCollapseInfoButton));
-        collapseBtn->setPosition({modInfoBg->getContentSize().width / 2, modInfoBg->getContentSize().height});
+        collapseBtn->setPosition(
+            {modInfoBg->getContentSize().width / 2, modInfoBg->getContentSize().height});
         collapseBtn->setAnchorPoint({0.5f, 0.f});
         modInfoMenu->addChild(collapseBtn);
     }
@@ -439,6 +446,51 @@ bool RLMenuLayer::init() {
     return true;
 }
 
+// TODO: Update icon color based on bg color
+void RLMenuLayer::setupBGAndListeners() {
+    m_background = rl::addLayerBackground(this);
+    m_backgroundType = CachedSettings::get()->backgroundType;
+    m_disableBackground = CachedSettings::get()->disableBackground;
+
+    // HACK: Should probably use CCNode::addEventListener
+    WeakRef<RLMenuLayer> weak = this;
+    // Priority is late for all of these so global changes are propagated.
+    m_disableBGListener = rl::makeSettingListener<bool>("disableBackground", [weak](bool disabled) {
+        if (Ref<RLMenuLayer> self = weak.lock()) {
+            // Do nothing if the background is already disabled.
+            if (self->m_disableBackground == disabled) return;
+            // Create a new background.
+            self->removeBackground();
+            self->m_background = rl::addLayerBackground(self.data(), !disabled);
+            self->m_disableBackground = disabled;
+        }
+    }, Priority::Late);
+    m_rgbBGListener = rl::makeSettingListener<ccColor3B>("rgbBackground", [weak](ccColor3B color) {
+        if (Ref<RLMenuLayer> self = weak.lock()) {
+            if (auto* bg = self->m_background) {
+                bg->setColor(color);
+            } else {
+                // Create a new background.
+                bool disabled = self->m_disableBackground;
+                self->m_background = rl::addLayerBackground(self.data(), !disabled);
+            }
+        }
+    }, Priority::Late);
+    m_BGTypeListener = rl::makeSettingListener<int>("backgroundType", [weak](int type) {
+        if (Ref<RLMenuLayer> self = weak.lock()) {
+            // Do nothing if the background is already the correct type.
+            if (self->m_backgroundType == type) return;
+            self->m_backgroundType = type;
+            // Don't process an already disabled background.
+            if (!self->m_disableBackground) {
+                // Create a new background.
+                self->removeBackground();
+                self->m_background = rl::addLayerBackground(self.data(), true);
+            }
+        }
+    }, Priority::Late);
+}
+
 bool RLMenuLayer::isGDServerOnline() {
     if (m_gdServerLabel) {
         m_gdServerLabel->setString("GD Server: Checking...");
@@ -446,33 +498,34 @@ bool RLMenuLayer::isGDServerOnline() {
     }
 
     m_gdServerTask.cancel();
-    m_gdServerTask.spawn(
-        web::WebRequest()
-            .bodyString("type=2&secret=Wmfd2893gb7")
-            .post("http://www.boomlings.com/database/getGJLevels21.php"),
-        [this](web::WebResponse response) {
-            if (!response.ok() || response.code() != 200) {
-                log::debug("Boomlings server offline or unreachable");
-                if (m_gdServerLabel) {
-                    m_gdServerLabel->setString("GD Server: Offline");
-                    m_gdServerLabel->setColor({255, 0, 0});
-                }
-                return;
-            }
 
-            log::debug("Boomlings server online");
+    m_gdServerTask.spawn(web::WebRequest()
+                             .bodyString("type=2&secret=Wmfd2893gb7")
+                             .post("http://www.boomlings.com/database/getGJLevels21.php"),
+                         [this](web::WebResponse response) {
+        if (!response.ok() || response.code() != 200) {
+            log::debug("Boomlings server offline or unreachable");
             if (m_gdServerLabel) {
-                m_gdServerLabel->setString("GD Server: Online");
-                m_gdServerLabel->setColor({64, 255, 128});
+                m_gdServerLabel->setString("GD Server: Offline");
+                m_gdServerLabel->setColor({255, 0, 0});
             }
-        });
+            return;
+        }
+
+        log::debug("Boomlings server online");
+        if (m_gdServerLabel) {
+            m_gdServerLabel->setString("GD Server: Online");
+            m_gdServerLabel->setColor({64, 255, 128});
+        }
+    });
 
     return false;
 }
 
+void RLMenuLayer::setGDServerOnline(bool online) {}
+
 void RLMenuLayer::onCollapseInfoButton(CCObject* sender) {
-    if (!m_modInfoBg)
-        return;
+    if (!m_modInfoBg) return;
 
     m_modInfoCollapsed = !m_modInfoCollapsed;
     Mod::get()->setSavedValue<bool>("mod_info_collapsed", m_modInfoCollapsed);
@@ -499,12 +552,24 @@ void RLMenuLayer::onCollapseInfoButton(CCObject* sender) {
 }
 
 void RLMenuLayer::onSettingsButton(CCObject* sender) {
-    openSettingsPopup(getMod());
+    //if (!CachedSettings::get()->enableExperimentalFeatures) {
+    //    geode::openSettingsPopup(getMod());
+    //    return;
+    //}
+    // Try creating injecting popup...
+    PeekSettingsPopup::create([weak = WeakRef(this)](RLLayerBackgroundData data) {
+        if (auto self = weak.lock()) {
+            self->removeBackground();
+            self->m_background = rl::addLayerBackground(self.data(), data);
+            // TODO: Update self
+        }
+    });
 }
 
 void RLMenuLayer::onQueueButton(CCObject* sender) {
     if (!rl::isUserSupporter()) {
-        FLAlertLayer::create("Feature Unavailable",
+        FLAlertLayer::create(
+            "Feature Unavailable",
             "This feature is only <cg>available</c> for <cp>Layout Supporters and Boosters</c>.",
             "OK")
             ->show();
@@ -515,238 +580,249 @@ void RLMenuLayer::onQueueButton(CCObject* sender) {
 }
 
 void RLMenuLayer::onDiscordButton(CCObject* sender) {
-    createQuickPopup("Rated Layouts Discord",
-        "You will be redirected to the <cl>Rated Layouts Discord Server</c>",
-        "No",
-        "Yes",
-        [](auto, bool yes) {
-            if (!yes)
-                return;
-            createQuickPopup("Confirm?",
-                "Are you sure you want to join the discord server?\n<cf>The developer of Rated Layouts isn't associated with the server.</c>\n<cy>Continue?</c>",
-                "No",
-                "Yes",
-                [](auto, bool yes) {
-                    if (!yes)
-                        return;
-                    int current = rl::getPlayerRubies();
-                    rl::setPlayerRubies(current - 5000);
-                    Notification::create(
-                        "Joining Rated Layouts Discord",
-                        NotificationIcon::Info)
-                        ->show();
-                    utils::web::openLinkInBrowser("https://discord.gg/jBf2wfBgVT");
-                });
-        });
+    utils::web::openLinkInBrowser("https://discord.gg/jBf2wfBgVT");
 }
 
 void RLMenuLayer::onBrowserButton(CCObject* sender) {
     createQuickPopup("Rated Layouts Browser",
-        "You will be redirected to the <cl>Rated Layouts Browser "
-        "website</c> in your web browser.\n<cy>Continue?</c>",
-        "No",
-        "Yes",
-        [](auto, bool yes) {
-            if (!yes)
-                return;
-            Notification::create(
-                "Opening Rated Layouts Browser in your web browser",
-                NotificationIcon::Info)
-                ->show();
-            utils::web::openLinkInBrowser(
-                "https://ratedlayouts.arcticwoof.xyz");
-            RLAchievements::onReward("misc_browser");
-        });
+                     "You will be redirected to the <cl>Rated Layouts Browser "
+                     "website</c> in your web browser.\n<cy>Continue?</c>",
+                     "No",
+                     "Yes",
+                     [](auto, bool yes) {
+        if (!yes) return;
+        Notification::create("Opening Rated Layouts Browser in your web browser",
+                             NotificationIcon::Info)
+            ->show();
+        utils::web::openLinkInBrowser("https://ratedlayouts.arcticwoof.xyz");
+        RLAchievements::onReward("misc_browser");
+    });
 }
 
 void RLMenuLayer::onDemonListButton(CCObject* sender) {
     switch (m_indexDia) {
-        case 0: {
-            DialogObject* dialogObj = DialogObject::create(
-                "ArcticWoof", "The <co>Rated Layouts Demon List</c> isn't done yet...", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+    case 0: {
+        DialogObject* dialogObj =
+            DialogObject::create("ArcticWoof",
+                                 "The <co>Rated Layouts Demon List</c> isn't done yet...",
+                                 28,
+                                 1.f,
+                                 false,
+                                 ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
         }
-        case 1: {
-            DialogObject* dialogObj = DialogObject::create(
-                "ArcticWoof", "Yep...<d050> <cl>still not done</c>...", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 1: {
+        DialogObject* dialogObj = DialogObject::create(
+            "ArcticWoof", "Yep...<d050> <cl>still not done</c>...", 28, 1.f, false, ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
         }
-        case 2: {
-            DialogObject* dialogObj = DialogObject::create(
-                "ArcticWoof", "Does this even work at all?", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 2: {
+        DialogObject* dialogObj = DialogObject::create(
+            "ArcticWoof", "Does this even work at all?", 28, 1.f, false, ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
         }
-        case 3: {
-            DialogObject* dialogObj = DialogObject::create(
-                "ArcticWoof", "uhm... hey <cp>Oracle</c>?", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 3: {
+        DialogObject* dialogObj = DialogObject::create(
+            "ArcticWoof", "uhm... hey <cp>Oracle</c>?", 28, 1.f, false, ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
         }
-        case 4: {
-            DialogObject* dialogObj = DialogObject::create(
-                "The Oracle", "...<d050> <cc>what is the reason for my presence?</c>", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 4);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 4: {
+        DialogObject* dialogObj =
+            DialogObject::create("The Oracle",
+                                 "...<d050> <cc>what is the reason for my presence?</c>",
+                                 28,
+                                 1.f,
+                                 false,
+                                 ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 4);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIcon_03.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIcon_03.png"_spr);
         }
-        case 5: {
-            DialogObject* dialogObj = DialogObject::create(
-                "ArcticWoof", "The <co>Demon List...?</c>", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 5: {
+        DialogObject* dialogObj = DialogObject::create(
+            "ArcticWoof", "The <co>Demon List...?</c>", 28, 1.f, false, ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
         }
-        case 6: {
-            DialogObject* dialogObj = DialogObject::create(
-                "The Oracle", "Ah... <d050> <cc>the Demon List...</c> <d050> <cr>I do not know what that is...</c>", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 4);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 6: {
+        DialogObject* dialogObj = DialogObject::create(
+            "The Oracle",
+            "Ah... <d050> <cc>the Demon List...</c> <d050> <cr>I do not know what that is...</c>",
+            28,
+            1.f,
+            false,
+            ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 4);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIcon_04.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIcon_04.png"_spr);
         }
-        case 7: {
-            DialogObject* dialogObj = DialogObject::create(
-                "ArcticWoof", "...<d050> bruh... <d100>", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 7: {
+        DialogObject* dialogObj =
+            DialogObject::create("ArcticWoof", "...<d050> bruh... <d100>", 28, 1.f, false, ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
         }
-        case 8: {
-            DialogObject* dialogObj = DialogObject::create(
-                "The Oracle", "My <cl>knowledge is limited</c> to the <cg>secrets</c> of the <cp>Cosmos</c>... <d050> <cc>perhaps you should ask someone else</c>", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 4);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 8: {
+        DialogObject* dialogObj = DialogObject::create(
+            "The Oracle",
+            "My <cl>knowledge is limited</c> to the <cg>secrets</c> of the "
+            "<cp>Cosmos</c>... <d050> <cc>perhaps you should ask someone else</c>",
+            28,
+            1.f,
+            false,
+            ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 4);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIcon_01.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIcon_01.png"_spr);
         }
-        case 9: {
-            DialogObject* dialogObj = DialogObject::create(
-                "ArcticWoof", "Yeah... probably... <d050>You're such a <cr>useless vault-looking thing</c>", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 9: {
+        DialogObject* dialogObj = DialogObject::create(
+            "ArcticWoof",
+            "Yeah... probably... <d050>You're such a <cr>useless vault-looking thing</c>",
+            28,
+            1.f,
+            false,
+            ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
         }
-        case 10: {
-            DialogObject* dialogObj = DialogObject::create(
-                "ArcticWoof", "... I should seriously stop turning <cl>Rated Layouts</c> into <cg>Geometry Dash Dos</c>.", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 10: {
+        DialogObject* dialogObj =
+            DialogObject::create("ArcticWoof",
+                                 "... I should seriously stop turning <cl>Rated Layouts</c> into "
+                                 "<cg>Geometry Dash Dos</c>.",
+                                 28,
+                                 1.f,
+                                 false,
+                                 ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
         }
-        case 11: {
-            DialogObject* dialogObj = DialogObject::create(
-                "Goog Cat", "goog...", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 3);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 11: {
+        DialogObject* dialogObj =
+            DialogObject::create("Goog Cat", "goog...", 28, 1.f, false, ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 3);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_goog.png"_spr);
-                RLAchievements::onReward("misc_goog");
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_goog.png"_spr);
+            RLAchievements::onReward("misc_goog");
         }
-        case 12: {
-            DialogObject* dialogObj = DialogObject::create(
-                "ArcticWoof", "<cg><s100>GOOG CAT!!!</s></c> goog...", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 12: {
+        DialogObject* dialogObj = DialogObject::create(
+            "ArcticWoof", "<cg><s100>GOOG CAT!!!</s></c> goog...", 28, 1.f, false, ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
-            }
-            m_indexDia++;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
         }
-        case 13: {
-            DialogObject* dialogObj = DialogObject::create(
-                "ArcticWoof", "Okay, I seriously need to <cr>stop</c> making this random stuff... <d500><cy>jk NOT!</c>", 28, 1.f, false, ccWHITE);
-            if (dialogObj) {
-                auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
-                dialog->addToMainScene();
-                dialog->animateInRandomSide();
+        m_indexDia++;
+        break;
+    }
+    case 13: {
+        DialogObject* dialogObj =
+            DialogObject::create("ArcticWoof",
+                                 "Okay, I seriously need to <cr>stop</c> making this random "
+                                 "stuff... <d500><cy>jk NOT!</c>",
+                                 28,
+                                 1.f,
+                                 false,
+                                 ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
 
-                rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
-            }
-            m_indexDia = 0;
-            break;
+            rl::setDialogObjectCustomIcon(dialog, "RL_dialogIconAW.png"_spr);
         }
-        default:
-            m_indexDia = 0;
-            break;
+        m_indexDia = 0;
+        break;
+    }
+    default: m_indexDia = 0; break;
     }
 }
 
@@ -776,46 +852,51 @@ void RLMenuLayer::onShopButton(CCObject* sender) {
     CCDirector::sharedDirector()->pushScene(transitionFade);
 }
 
+void RLMenuLayer::onShopButton2(CCObject* sender) {
+    auto shopLayer = RLShopLayer2::create();
+    auto scene = CCScene::create();
+    scene->addChild(shopLayer);
+    auto transitionFade = CCTransitionFade::create(0.5f, scene);
+    CCDirector::sharedDirector()->pushScene(transitionFade);
+}
+
+void RLMenuLayer::onShopButton2Fail(CCObject* sender) {
+    Notification::create("Unable to load shop", NotificationIcon::Error)->show();
+}
+
 void RLMenuLayer::onAnnouncementButton(CCObject* sender) {
     auto popup = RLNewsAnnouncementPopup::create();
     popup->show();
     m_newsBadge->setVisible(false);
 }
 
+#if 0
 void RLMenuLayer::onUnknownButton(CCObject* sender) {
     // disable the button first to prevent spamming
-    auto menuItem = static_cast<CCMenuItemSpriteExtra*>(sender);
-    menuItem->setEnabled(false);
+    auto* item = static_cast<CCMenuItemSpriteExtra*>(sender);
+    item->setEnabled(false);
+    WeakRef menuItem = item;
     // fetch dialogue from server and show it in a dialog
     Ref<RLMenuLayer> self = this;
     m_dialogueTask.spawn(
-        web::WebRequest().get(std::string(rl::BASE_API_URL) + "/getDialogue"),
-        [self, menuItem](web::WebResponse const& res) {
-            if (!self)
-                return;
+        LocalEndpoint::get("getDialogue"),
+        [self, menuItem](Result<matjson::Value> res) {
+            if (!self) return;
             std::string text = "...";  // default text
             int id = 0;
-            if (res.ok()) {
-                auto jsonRes = res.json();
-                if (jsonRes) {
-                    auto json = jsonRes.unwrap();
-                    if (json.contains("id")) {
-                        if (auto i = json["id"].as<int>(); i)
-                            id = i.unwrap();
-                    }
-                    log::info("Fetched dialogue id: {}", id);
-                    if (auto diag = json["dialogue"].asString(); diag) {
-                        text = diag.unwrap();
-                    }
-                } else {
-                    log::error("Failed to parse getDialogue response");
-                    if (menuItem)
-                        menuItem->setEnabled(true);
-                }
+            if (res.isErr()) {
+                log::error("Failed to fetch dialogue: {}", res.unwrapErr());
+                if (auto item = menuItem.lock())
+                    item->setEnabled(true);
             } else {
-                log::error("Failed to fetch dialogue");
-                if (menuItem)
-                    menuItem->setEnabled(true);
+                auto json = std::move(res).unwrap();
+                if (json.contains("id")) {
+                    if (auto i = json["id"].as<int>())
+                        id = i.unwrap();
+                }
+                log::info("Fetched dialogue id: {}", id);
+                if (auto diag = json["dialogue"].asString())
+                    text = std::move(diag).unwrap();
             }
 
             DialogObject* dialogObj = DialogObject::create(
@@ -825,28 +906,86 @@ void RLMenuLayer::onUnknownButton(CCObject* sender) {
                 dialog->addToMainScene();
                 dialog->animateInRandomSide();
                 RLAchievements::onReward("misc_creator_1");  // first time dialogue
-                Mod::get()->setSavedValue<int>(
-                    "dialoguesSpoken",
-                    Mod::get()->getSavedValue<int>("dialoguesSpoken") + 1);
+                const int timesSpoken = Mod::get()->getSavedValue<int>("dialoguesSpoken") + 1;
+                Mod::get()->setSavedValue<int>("dialoguesSpoken", timesSpoken);
 
                 // secret message
                 if (id == 169) {
                     RLAchievements::onReward("misc_salt");
                 }
                 // yap
-                if (Mod::get()->getSavedValue<int>("dialoguesSpoken") == 25) {
+                if (timesSpoken == 25) {
                     RLAchievements::onReward("misc_creator_25");
                 }
-                if (Mod::get()->getSavedValue<int>("dialoguesSpoken") == 50) {
+                if (timesSpoken == 50) {
                     RLAchievements::onReward("misc_creator_50");
                 }
-                if (Mod::get()->getSavedValue<int>("dialoguesSpoken") == 100) {
+                if (timesSpoken == 100) {
                     RLAchievements::onReward("misc_creator_100");
                 }
             }
-            menuItem->setEnabled(true);
+            if (auto item = menuItem.lock())
+                item->setEnabled(true);
         });
 }
+#else
+void RLMenuLayer::onUnknownButton(CCObject* sender) {
+    // disable the button first to prevent spamming
+    auto* item = static_cast<CCMenuItemSpriteExtra*>(sender);
+    item->setEnabled(false);
+    WeakRef menuItem = item;
+    // fetch dialogue from server and show it in a dialog
+    Ref<RLMenuLayer> self = this;
+    m_dialogueTask.spawn(web::WebRequest().get(std::string(rl::BASE_API_URL) + "/getDialogue"),
+                         [self, menuItem](web::WebResponse const& res) {
+        std::string text = "...";  // default text
+        int id = 0;
+        if (!res.ok()) {
+            log::error("Failed to fetch dialogue");
+            if (auto item = menuItem.lock()) item->setEnabled(true);
+        } else if (auto jsonRes = res.json()) {
+            auto json = jsonRes.unwrap();
+            if (json.contains("id")) {
+                if (auto i = json["id"].as<int>()) id = i.unwrap();
+            }
+            log::info("Fetched dialogue id: {}", id);
+            if (auto diag = json["dialogue"].asString()) {
+                text = std::move(diag).unwrap();
+            }
+        } else {
+            log::error("Failed to parse getDialogue response");
+            if (auto item = menuItem.lock()) item->setEnabled(true);
+        }
+
+        DialogObject* dialogObj =
+            DialogObject::create("Layout Creator", text.c_str(), 28, 1.f, false, ccWHITE);
+        if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
+            RLAchievements::onReward("misc_creator_1");  // first time dialogue
+            const int timesSpoken = Mod::get()->getSavedValue<int>("dialoguesSpoken") + 1;
+            Mod::get()->setSavedValue<int>("dialoguesSpoken", timesSpoken);
+
+            // secret message
+            if (id == 169) {
+                RLAchievements::onReward("misc_salt");
+            }
+            // yap
+            if (timesSpoken == 25) {
+                RLAchievements::onReward("misc_creator_25");
+            }
+            if (timesSpoken == 50) {
+                RLAchievements::onReward("misc_creator_50");
+            }
+            if (timesSpoken == 100) {
+                RLAchievements::onReward("misc_creator_100");
+            }
+        }
+        if (auto item = menuItem.lock()) item->setEnabled(true);
+    });
+}
+#endif
 
 void RLMenuLayer::onInfoButton(CCObject* sender) {
     auto guidePopup = RLGuideInfoPopup::create();
@@ -882,8 +1021,7 @@ void RLMenuLayer::onWeeklyLayouts(CCObject* sender) {
 }
 
 void RLMenuLayer::onMonthlyLayouts(CCObject* sender) {
-    auto monthlyPopup =
-        RLEventLayouts::create(RLEventLayouts::EventType::Monthly);
+    auto monthlyPopup = RLEventLayouts::create(RLEventLayouts::EventType::Monthly);
     monthlyPopup->show();
 }
 
@@ -897,7 +1035,8 @@ void RLMenuLayer::onFeaturedLayouts(CCObject* sender) {
 }
 
 void RLMenuLayer::onSentLayouts(CCObject* sender) {
-    if (rl::isUserClassicRole() || rl::isUserPlatformerRole() || rl::isUserOwner() || rl::isUserDeveloper()) {
+    if (rl::isUserClassicRole() || rl::isUserPlatformerRole() || rl::isUserOwner() ||
+        rl::isUserDeveloper()) {
         auto selectPopup = RLSelectSends::create();
         selectPopup->show();
         return;
@@ -905,8 +1044,8 @@ void RLMenuLayer::onSentLayouts(CCObject* sender) {
 
     RLLevelBrowserLayer::ParamList params;
     params.emplace_back("type", "1");
-    auto browserLayer = RLLevelBrowserLayer::create(
-        RLLevelBrowserLayer::Mode::Sent, params, "Sent Layouts");
+    auto browserLayer =
+        RLLevelBrowserLayer::create(RLLevelBrowserLayer::Mode::Sent, params, "Sent Layouts");
     auto scene = CCScene::create();
     scene->addChild(browserLayer);
     auto transitionFade = CCTransitionFade::create(0.5f, scene);
@@ -930,6 +1069,7 @@ void RLMenuLayer::onSearchLayouts(CCObject* sender) {
 }
 
 void RLMenuLayer::onEnter() {
+    auto modInfoFuture = fetchModInfoAsync();
     CCLayer::onEnter();
 
     m_indexDia = 0;
@@ -939,8 +1079,7 @@ void RLMenuLayer::onEnter() {
         m_modStatusLabel->setColor({255, 150, 0});
     }
     if (m_modVersionLabel) {
-        m_modVersionLabel->setString(
-            Mod::get()->getVersion().toVString().c_str());
+        m_modVersionLabel->setString(Mod::get()->getVersion().toVString().c_str());
         m_modVersionLabel->setColor({255, 150, 0});
     }
 
@@ -952,9 +1091,8 @@ void RLMenuLayer::onEnter() {
     isGDServerOnline();
 
     Ref<RLMenuLayer> selfRef = this;
-    async::spawn(fetchModInfoAsync(), [selfRef](std::optional<ModInfo> infoOpt) {
-        if (!selfRef)
-            return;
+    async::spawn(std::move(fetchModInfoAsync), [selfRef](std::optional<ModInfo> infoOpt) {
+        if (!selfRef) return;
 
         if (!infoOpt) {
             if (selfRef->m_modStatusLabel) {
@@ -976,14 +1114,20 @@ void RLMenuLayer::onEnter() {
             }
         }
 
-        if (selfRef->m_modVersionLabel) {
-            selfRef->m_modVersionLabel->setString(
-                ("Up-to-date - " + info.modVersion).c_str());
-            selfRef->m_modVersionLabel->setColor({64, 255, 128});
-
-            if (info.modVersion != Mod::get()->getVersion().toVString()) {
+        if (selfRef->m_modVersionLabel && info.modVersion.has_value()) {
+            VersionInfo reqVersion = *info.modVersion;
+            VersionInfo modVersion = Mod::get()->getVersion();
+            if (reqVersion == modVersion) {
                 selfRef->m_modVersionLabel->setString(
-                    ("Outdated - " + Mod::get()->getVersion().toVString()).c_str());
+                    ("Up-to-date - " + reqVersion.toVString()).c_str());
+                selfRef->m_modVersionLabel->setColor({64, 255, 128});
+            } else if (reqVersion < modVersion) {
+                selfRef->m_modVersionLabel->setString(
+                    ("Ahead - " + modVersion.toVString()).c_str());
+                selfRef->m_modVersionLabel->setColor({159, 252, 125});
+            } else {
+                selfRef->m_modVersionLabel->setString(
+                    ("Outdated - " + modVersion.toVString()).c_str());
                 selfRef->m_modVersionLabel->setColor({255, 200, 0});
             }
         }
@@ -1007,19 +1151,18 @@ void RLMenuLayer::showReadGuidePopup() {
     }
 
     Mod::get()->setSavedValue<bool>("hasReadGuide", true);
-    createQuickPopup(
-        "New to Rated Layouts?",
-        "Do you want to read the <cg>guide</c> to learn more about <cl>Rated Layouts</c> and how it works?\n"
-        "<cy>You can read this via the Info Button at the Bottom Left corner later if you want.</c>",
-        "No",
-        "Yes",
-        [](auto, bool yes) {
-            if (!yes)
-                return;
-            auto popup = RLGuideInfoPopup::create();
-            if (popup)
-                popup->show();
-        });
+    createQuickPopup("New to Rated Layouts?",
+                     "Do you want to read the <cg>guide</c> to learn more about <cl>Rated "
+                     "Layouts</c> and how it works?\n"
+                     "<cy>You can read this via the Info Button at the Bottom Left corner later if "
+                     "you want.</c>",
+                     "No",
+                     "Yes",
+                     [](auto, bool yes) {
+        if (!yes) return;
+        auto popup = RLGuideInfoPopup::create();
+        if (popup) popup->show();
+    });
 }
 
 RLMenuLayer* RLMenuLayer::create() {
@@ -1033,6 +1176,5 @@ RLMenuLayer* RLMenuLayer::create() {
 }
 
 void RLMenuLayer::keyBackClicked() {
-    CCDirector::sharedDirector()->popSceneWithTransition(
-        0.5f, PopTransition::kPopTransitionFade);
+    CCDirector::sharedDirector()->popSceneWithTransition(0.5f, PopTransition::kPopTransitionFade);
 }
