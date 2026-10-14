@@ -58,7 +58,7 @@ jobs:
 
             - uses: actions/upload-artifact@v7
               with:
-                  name: Build Output
+                  name: build-output
                   path: ${{ steps.build.outputs.build-output }}
     nightly:
         name: Nightly Release
@@ -70,7 +70,17 @@ jobs:
         steps:
           - uses: actions/download-artifact@v8
             with:
+              name: build-output
+              merge-multiple: true
               path: ./artifacts/
+
+          - name: Verify Geode package
+            run: |
+              find ./artifacts -maxdepth 1 -type f -print
+              if ! find ./artifacts -maxdepth 1 -type f -name '*.geode' -print -quit | grep -q .; then
+                echo "No .geode package was downloaded."
+                exit 1
+              fi
 
           - name: Get latest release tag
             id: getrelease
@@ -89,7 +99,7 @@ jobs:
                 **Development build for commit ${{ github.sha }}**.
                 > [`View Changes`](${{ github.event.repository.html_url }}/compare/${{ steps.getrelease.outputs.tag }}...nightly)
               files: |
-                ./artifacts/Build Output/*.*
+                ./artifacts/*.geode
 
           - name: Check for Discord webhook URL
             id: check-discord
@@ -102,7 +112,7 @@ jobs:
             with:
               webhook-url: ${{ secrets.NIGHTLY_WEBHOOK }}
               files: |
-                ./artifacts/Build Output/*.geode
+                ./artifacts/*.geode
               embed-title: "[${{ github.event.repository.name }}] Nightly Release"
               embed-description: |
                 **Development build for commit [`${{ github.sha }}`](${{ github.event.repository.html_url}}/commit/${{ github.sha }})**.
