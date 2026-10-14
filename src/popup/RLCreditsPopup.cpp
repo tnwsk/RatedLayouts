@@ -89,7 +89,7 @@ bool RLCreditsPopup::init() {
     // Fetch mod players
     Ref<RLCreditsPopup> self = this;
     async::spawn(
-        LocalEndpoint::build("getCredits").expires(1_hours).verifySuccess().nostale().get(),
+        LocalEndpoint::build("getCredits").expires(10_mins).verifySuccess().nostale().get(),
         [self](Result<matjson::Value> res) {
         if (res.isErr()) {
             log::warn("{}", res.unwrapErr());

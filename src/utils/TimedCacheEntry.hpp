@@ -23,7 +23,7 @@ inline RLTimestamp getNeverTimestamp() { return std::numeric_limits<RLTimestamp>
 
 /// A time in seconds.
 enum class Expires : int32_t {
-    DEFAULT = 360,
+    DEFAULT = 60,
     NEVER = -1,
     ANY = -2,
 };

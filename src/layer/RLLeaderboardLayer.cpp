@@ -465,7 +465,7 @@ void RLLeaderboardLayer::fetchLeaderboard(int type, int) {
     async::spawn(LocalEndpoint::build("getScore")
                      .param("type", type)
                      .nkparam("amount=100")
-                     .expires(30_mins)
+                     .expires(1_mins)
                      .verifySuccess("fetchLeaderboard")
                      .get(),
                  [self, type](Result<matjson::Value> res) {

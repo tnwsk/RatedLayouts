@@ -322,9 +322,9 @@
 		"requestCacheLifetime": {
 			"type": "int",
 			"name": "Request Cache Lifetime (Seconds)",
-			"default": 360,
+			"default": 60,
 			"description": "Keep comment role and level rating fetch results cached for this many seconds. <cy>Lower values refresh more often.</c>",
-			"min": 300,
+			"min": 30,
 			"max": 86400,
 			"control": {
 				"arrows": true,

@@ -742,7 +742,7 @@ class $modify(RLLevelCell, LevelCell) {
             Ref<LevelCell> cellRef = this;
             m_fields->m_fetchTask.spawn(LocalEndpoint::build("getModLevel")
                                             .ibody({{"levelId", levelId}})
-                                            .expires(10_mins)
+                                            .expires(2_mins)
                                             .getWithAuth(),
                                         [cellRef, levelId, this](Result<matjson::Value> res) {
                 if (res.isErr()) {
@@ -880,7 +880,7 @@ class $modify(RLLevelCell, LevelCell) {
         }
         async::spawn(LocalEndpoint::build("checkRated")
                          .ibody({{"levelId", levelId}})
-                         .expires(20_mins)
+                         .expires(2_mins)
                          .nostale()
                          .getWithAuth(),
                      [levelId](Result<matjson::Value> res) {

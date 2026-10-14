@@ -14,6 +14,7 @@
 #include "popup/RLNameplateSubmitPopup.hpp"
 #include "popup/RLBuyItemPopup.hpp"
 #include "RLSecretLayer1.hpp"
+#include <algorithm>
 #include <Geode/Enums.hpp>
 #include <Geode/Geode.hpp>
 #include <Geode/binding/FMODAudioEngine.hpp>
@@ -30,10 +31,12 @@ using namespace geode::prelude;
 using namespace rl;
 
 using PageHasher = NoHashHasher<int>;
-using ShopCacheType = std::unordered_map<int, std::vector<RLNameplateInfo>, PageHasher>;
+using ShopCacheEntry = TimedCacheEntry<std::vector<RLNameplateInfo>>;
+using ShopCacheType = std::unordered_map<int, ShopCacheEntry, PageHasher>;
 
 // TODO: Add option to lazily load pages instead of batching at startup.
 
+static constexpr auto kShopCacheLifetime = 30_mins;
 static arc::Mutex<ShopCacheType> ShopCache;
 static std::atomic<int> TotalPages = 1;
 static async::TaskHolder<> PrefetchTask;
@@ -131,14 +134,15 @@ static arc::Future<bool> PreloadShopPage(int page) {
     UpdateToRealPage(page);
     /*Is cached*/ {
         auto cache = co_await ShopCache.lock();
-        if (cache->contains(page)) co_return true;
+        auto entry = cache->find(page);
+        if (entry != cache->end() && !entry->second.isStale()) co_return true;
     }
     log::trace("Preloading shop page {}", page);
 
     // Set up our map without actually changing anything
     Result<matjson::Value> res = co_await LocalEndpoint::build("getNameplates")
                                      .ibody({{"page", page + 1}, {"amount", 8}})
-                                     .expires(18_hours)
+                                     .expires(kShopCacheLifetime)
                                      .get();
     // Check the results...
     if (res.isErr()) {
@@ -163,10 +167,8 @@ static arc::Future<bool> PreloadShopPage(int page) {
 
     // Now add to cache
     auto cache = co_await ShopCache.lock();
-    if (!cache->contains(page)) {
-        (*cache)[page] = std::move(items);
-        log::trace("Preloaded shop page {}", page);
-    }
+    (*cache)[page] = ShopCacheEntry(kShopCacheLifetime, std::move(items));
+    log::trace("Preloaded shop page {}", page);
     co_return true;
 }
 
@@ -223,11 +225,26 @@ static arc::Future<bool> PrefetchShopPagesWithExponentialBackoff() {
 }
 
 void rl::ShopLayer_prefetch() {
+    if (AllPrefetched.load()) {
+        auto cache = ShopCache.blockingLock();
+        const bool hasExpiredEntry =
+            std::any_of(cache->begin(), cache->end(), [](auto const& entry) {
+                return entry.second.isStale();
+            });
+        if (hasExpiredEntry) {
+            AllPrefetched = false;
+            TriedPrefetching = false;
+        }
+    }
     if (TriedPrefetching.exchange(true)) return;
     // Try prefetching the rest of the pages
     PrefetchTask.spawn([]() -> arc::Future<> {
         auto guard = co_await FetchMtx.lock();
         if (!DidInit.load()) co_return;
+        if (!co_await PreloadShopPage(0)) {
+            AllPrefetched = false;
+            co_return;
+        }
         AllPrefetched = co_await PrefetchShopPagesWithExponentialBackoff();
         co_return;
     }, []() {
@@ -267,11 +284,12 @@ CCArray* RLShopLayer2::getItemsForPage(int page) {
     std::vector<RLNameplateInfo> items;
     /*Get items*/ {
         auto cache = ShopCache.blockingLock();
-        if (!cache->contains(page)) {
+        auto entry = cache->find(page);
+        if (entry == cache->end() || entry->second.isStale()) {
             //log::error("Shop page {} did not load!", page);
             return nullptr;
         }
-        items = cache->at(page);
+        items = entry->second.value();
     }
 
     if (items.empty()) [[unlikely]] {

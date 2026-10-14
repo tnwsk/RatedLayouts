@@ -140,7 +140,7 @@ bool RLNewsAnnouncementPopup::init() {
 
     Ref<RLNewsAnnouncementPopup> self = this;
     m_fetchTask.spawn(
-        LocalEndpoint::build("getAllAnnouncement").expires(5_mins).get(),
+        LocalEndpoint::build("getAllAnnouncement").expires(2_mins).get(),
         [self](Result<matjson::Value> res) {
             if (res.isErr()) {
                 log::error("Failed to fetch announcements: {}", res.unwrapErr());

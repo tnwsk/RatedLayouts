@@ -486,7 +486,7 @@ void RLLevelBrowserLayer::fetchLevelsForType(int type) {
                    .param("type", type)
                    .param("page", m_page + 1)
                    .nkparam("amount", PER_PAGE)
-                   .expires(10_mins)
+                   .expires(2_mins)
                    .nostale()
                    .take();
     if (m_filterClassic) {
@@ -521,7 +521,7 @@ void RLLevelBrowserLayer::fetchAccountLevels(int accountId) {
                    .param("accountId", accountId)
                    .param("page", m_page + 1)
                    .nkparam("amount", PER_PAGE)
-                   .expires(10_mins)
+                   .expires(2_mins)
                    .nostale()
                    .take();
     if (m_filterClassic) {
@@ -556,7 +556,7 @@ void RLLevelBrowserLayer::performSearchQuery(ParamList const& params) {
                        .param("safe", value)
                        .param("page", m_page + 1)
                        .nkparam("amount", PER_PAGE)
-                       .expires(5_mins)
+                       .expires(1_mins)
                        .nostale()
                        .take();
         m_searchTask.spawn(req.get(), [self](Result<matjson::Value> res) {
