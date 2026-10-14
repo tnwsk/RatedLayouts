@@ -1,4 +1,11 @@
-# v2
+# v2.0.2
+- hi
+- made cache better
+- uh
+- i forgot
+- build
+
+# v2.0.0
 - welcome to myanmar
 
 # v1.0.17
