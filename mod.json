@@ -6,11 +6,11 @@
 		"mac": "2.2081",
 		"ios": "2.2081"
 	},
-	"id": "arcticwoof.rated_layouts",
-	"name": "Rated Layouts",
-	"version": "v1.0.17",
-	"developers": ["ArcticWoof", "Yang"],
-	"description": "Play layout rated levels",
+	"id": "reject.tnwsk-rates",
+	"name": "Rated World Levels",
+	"version": "v2.0.0",
+	"developers": ["reject", "ArcticWoof", "Yang"],
+	"description": "hi",
 	"resources": {
 		"spritesheets": {
 			"RLCoins": [
@@ -76,9 +76,9 @@
 		}
 	},
 	"links": {
-		"source": "https://github.com/RatedLayouts/RatedLayouts",
-		"homepage": "https://ratedlayouts.arcticwoof.xyz/",
-		"community": "https://discord.gg/ratedlayouts"
+		"source": "https://github.com/tnwsk/RatedLayouts",
+		"homepage": "https://ratedlayouts.speakinghead.serv00.net/",
+		"community": "https://google.com/search?q=money"
 	},
 	"tags": [
 		"content",
