@@ -570,17 +570,17 @@ void RLMenuLayer::onQueueButton(CCObject* sender) {
 }
 
 void RLMenuLayer::onBrowserButton(CCObject* sender) {
-    createQuickPopup("Rated Maps Browser",
-                     "You will be redirected to the <cl>Rated Maps Browser "
+    createQuickPopup("Google",
+                     "You will be redirected to the <cl>Google "
                      "website</c> in your web browser.\n<cy>Continue?</c>",
                      "No",
                      "Yes",
                      [](auto, bool yes) {
         if (!yes) return;
-        Notification::create("Opening Rated Maps Browser in your web browser",
+        Notification::create("Open google in your web browser",
                              NotificationIcon::Info)
             ->show();
-        utils::web::openLinkInBrowser("https://ratedmaps.arcticwoof.xyz");
+        utils::web::openLinkInBrowser("https://google.com");
         RLAchievements::onReward("misc_browser");
     });
 }
@@ -589,8 +589,8 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     switch (m_indexDia) {
     case 0: {
         DialogObject* dialogObj =
-            DialogObject::create("ArcticWoof",
-                                 "The <co>Rated Maps Demon List</c> isn't done yet...",
+            DialogObject::create("Splink",
+                                 "The <co>hi</c> isn't <cr>Hello</c>",
                                  28,
                                  1.f,
                                  false,
@@ -607,7 +607,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     }
     case 1: {
         DialogObject* dialogObj = DialogObject::create(
-            "ArcticWoof", "Yep...<d050> <cl>still not done</c>...", 28, 1.f, false, ccWHITE);
+            "Splink", "Yep...<d050> <cl>still not done</c>...", 28, 1.f, false, ccWHITE);
         if (dialogObj) {
             auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
             dialog->addToMainScene();
@@ -620,7 +620,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     }
     case 2: {
         DialogObject* dialogObj = DialogObject::create(
-            "ArcticWoof", "Does this even work at all?", 28, 1.f, false, ccWHITE);
+            "Splink", "Does this even work at all?", 28, 1.f, false, ccWHITE);
         if (dialogObj) {
             auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
             dialog->addToMainScene();
@@ -633,7 +633,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     }
     case 3: {
         DialogObject* dialogObj = DialogObject::create(
-            "ArcticWoof", "uhm... hey <cp>Oracle</c>?", 28, 1.f, false, ccWHITE);
+            "Splink", "uhm... hey <cp>Oracle</c>?", 28, 1.f, false, ccWHITE);
         if (dialogObj) {
             auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
             dialog->addToMainScene();
@@ -664,7 +664,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     }
     case 5: {
         DialogObject* dialogObj = DialogObject::create(
-            "ArcticWoof", "The <co>Demon List...?</c>", 28, 1.f, false, ccWHITE);
+            "Splink", "The <co>Demon List...?</c>", 28, 1.f, false, ccWHITE);
         if (dialogObj) {
             auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
             dialog->addToMainScene();
@@ -695,7 +695,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     }
     case 7: {
         DialogObject* dialogObj =
-            DialogObject::create("ArcticWoof", "...<d050> bruh... <d100>", 28, 1.f, false, ccWHITE);
+            DialogObject::create("Splink", "...<d050> bruh... <d100>", 28, 1.f, false, ccWHITE);
         if (dialogObj) {
             auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
             dialog->addToMainScene();
@@ -727,7 +727,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     }
     case 9: {
         DialogObject* dialogObj = DialogObject::create(
-            "ArcticWoof",
+            "Splink",
             "Yeah... probably... <d050>You're such a <cr>useless vault-looking thing</c>",
             28,
             1.f,
@@ -745,7 +745,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     }
     case 10: {
         DialogObject* dialogObj =
-            DialogObject::create("ArcticWoof",
+            DialogObject::create("Splink",
                                  "... I should seriously stop turning <cl>Rated Maps</c> into "
                                  "<cg>Geometry Dash Dos</c>.",
                                  28,
@@ -778,7 +778,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     }
     case 12: {
         DialogObject* dialogObj = DialogObject::create(
-            "ArcticWoof", "<cg><s100>GOOG CAT!!!</s></c> goog...", 28, 1.f, false, ccWHITE);
+            "Splink", "<cg><s100>GOOG CAT!!!</s></c> goog...", 28, 1.f, false, ccWHITE);
         if (dialogObj) {
             auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
             dialog->addToMainScene();
@@ -791,7 +791,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     }
     case 13: {
         DialogObject* dialogObj =
-            DialogObject::create("ArcticWoof",
+            DialogObject::create("Splink",
                                  "Okay, I seriously need to <cr>stop</c> making this random "
                                  "stuff... <d500><cy>jk NOT!</c>",
                                  28,

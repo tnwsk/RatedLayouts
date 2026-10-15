@@ -86,7 +86,7 @@ static constexpr Achievement s_miscAchievements[] {
     {"misc_creator_25", "Map entrepreneur", "Talk to the Map Creator 25 times", Collectable::Misc, 1, "RL_bob.png"_spr},
     {"misc_creator_50", "Nosey Creator", "Talk to the Map Creator 50 times", Collectable::Misc, 1, "RL_bob.png"_spr},
     {"misc_creator_100", "Business Map Creator", "Talk to the Map Creator 100 times", Collectable::Misc, 1, "RL_bob.png"_spr},
-    {"misc_browser", "www.ratedmaps.com", "Browse the Rated Maps Website", Collectable::Misc, 1, "RL_browser01.png"_spr},
+    {"misc_browser", "www.google.com", "Open google", Collectable::Misc, 1, "RL_browser01.png"_spr},
     {"misc_salt", "SALT finally rated", "but is it verified?", Collectable::Misc, 1, "RL_bob.png"_spr},
     {"misc_arcticwoof", "Find the Woof", "Find the Rated Maps Creator", Collectable::Misc, 1, "RL_arcticwoof01.png"_spr},
     {"misc_gauntlet", "Gauntlet Conqueror", "Complete a Map Gauntlet", Collectable::Misc, 1, "RL_gauntlet-2.png"_spr},
