@@ -1,8 +1,9 @@
+# .github/workflows/release.yml
 name: Release Geode Mod
 
 on:
   workflow_run:
-    workflows: ["build.yml"]
+    workflows: ["Build Geode Mod"]
     types: [completed]
 
 jobs:
@@ -18,23 +19,6 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
-
-      - name: Check for Discord webhook URL
-        id: check-discord
-        shell: bash
-        run: |
-          if [ -n "${{ secrets.RELEASE_WEBHOOK }}" ]; then
-            echo "webhook-url=${{ secrets.RELEASE_WEBHOOK }}" >> "$GITHUB_OUTPUT"
-            echo "has-webhook=true" >> "$GITHUB_OUTPUT"
-            echo "Using RELEASE_WEBHOOK"
-          elif [ -n "${{ secrets.NIGHTLY_WEBHOOK }}" ]; then
-            echo "webhook-url=${{ secrets.NIGHTLY_WEBHOOK }}" >> "$GITHUB_OUTPUT"
-            echo "has-webhook=true" >> "$GITHUB_OUTPUT"
-            echo "Using NIGHTLY_WEBHOOK"
-          else
-            echo "has-webhook=false" >> "$GITHUB_OUTPUT"
-            echo "No webhook configured"
-          fi
 
       - name: Read mod version from mod.json
         id: mod-version
@@ -82,15 +66,6 @@ jobs:
           name: ${{ steps.mod-version.outputs.tag }}
           body: |
             Release ${{ steps.mod-version.outputs.tag }}
-
             Built from workflow run: ${{ github.event.workflow_run.html_url }}
           draft: false
           prerelease: false
-
-      - name: Send Discord webhook
-        if: ${{ steps.check-discord.outputs.has-webhook == 'true' }}
-        uses: BlueWitherer/mod-discord-webhooks/geode@main
-        with:
-          webhook-url: ${{ steps.check-discord.outputs.webhook-url }}
-          changelog: |
-            Release ${{ steps.mod-version.outputs.tag }}
