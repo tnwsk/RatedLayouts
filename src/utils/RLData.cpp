@@ -235,6 +235,7 @@ struct LocalEndpointData {
     asp::Duration expires;
     std::optional<matjson::Value> body;
     LocalEndpoint::Verifier verify_ = nullptr;
+    bool cache = true;
     bool nostale = false;
     bool progress = false;
 
@@ -313,6 +314,7 @@ LocalEndpointData::LocalEndpointData(Builder&& builder) : LocalEndpointData(buil
     if (builder.m_body) this->initBody(*std::move(builder.m_body));
     if (builder.m_expires) this->expires = *builder.m_expires;
     this->verify_ = std::move(builder.m_verify);
+    this->cache = builder.m_cache;
     this->nostale = builder.m_nostale;
     this->progress = builder.m_progress;
 }
@@ -367,15 +369,17 @@ static LocalEndpoint::ResFuture getRemoteEndpointCommon(web::WebResponse respons
             co_return Err(std::move(msg));
     }
 
-    auto cache = co_await LocalEndpointCache.lock();
-    if (!cache->contains(data.key)) {
-        cache->emplace(data.key, RequestCacheEntry(data.expires, json));
-        data.log("added entry to cache");
-    } else if (alwaysEmplace) {
-        RequestCacheEntry& curr = cache->at(data.key);
-        if (curr.isStale()) {
-            curr = RequestCacheEntry(data.expires, json);
-            data.log("added entry to cache (forced)");
+    if (data.cache) {
+        auto cache = co_await LocalEndpointCache.lock();
+        if (!cache->contains(data.key)) {
+            cache->emplace(data.key, RequestCacheEntry(data.expires, json));
+            data.log("added entry to cache");
+        } else if (alwaysEmplace) {
+            RequestCacheEntry& curr = cache->at(data.key);
+            if (curr.isStale()) {
+                curr = RequestCacheEntry(data.expires, json);
+                data.log("added entry to cache (forced)");
+            }
         }
     }
 
@@ -412,7 +416,7 @@ template <bool WithAuth>
 static LocalEndpoint::ResFuture getLocalEndpointCommon(LocalEndpointData data) {
     ARC_FRAME();
 
-    /*Initial Check*/ {
+    if (data.cache) {
         auto cache = co_await LocalEndpointCache.lock();
         if (cache->contains(data.key)) {
             data.log("found entry in cache");

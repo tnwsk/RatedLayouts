@@ -99,6 +99,7 @@ struct LocalEndpoint {
         Verifier m_verify = nullptr;
         asp::SmallVec<std::string, 2> m_params;
         asp::SmallVec<std::string, 1> m_nkparams;
+        bool m_cache = true;
         bool m_nostale = false;
         bool m_progress = false;
 
@@ -116,6 +117,11 @@ struct LocalEndpoint {
         }
         Builder& nostale(bool val = true) {
             m_nostale = val;
+            return *this;
+        }
+        /// Skips both reading from and writing to the request cache.
+        Builder& noCache() {
+            m_cache = false;
             return *this;
         }
         Builder& progress(bool val = true) {
