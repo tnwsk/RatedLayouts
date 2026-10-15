@@ -1,3 +1,7 @@
+# v2.0.4
+- branding!
+- shop menu loop changed to chilled 1 for fun
+
 # v2.0.3
 - removed the "Avg:" label that was layered badly
 - also nobody liked it
