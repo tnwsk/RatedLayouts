@@ -256,15 +256,6 @@ bool RLMenuLayer::init() {
         infoMenu->addChild(queueBtn);
     }
 
-    // discord thingy
-    auto discordIconSpr = CCSprite::createWithSpriteFrameName("RL_discord01.png"_spr);
-    discordIconSpr->setScale(0.7f);
-    auto discordIconBtn = CCMenuItemSpriteExtra::create(
-        discordIconSpr, this, menu_selector(RLMenuLayer::onDiscordButton));
-    discordIconBtn->setPosition({infoButton->getPositionX(), infoButton->getPositionY() + 40});
-    infoMenu->addChild(discordIconBtn);
-
-    // news button above discord
     // @geode-ignore(unknown-resource)
     auto announceSpr = CCSprite::createWithSpriteFrameName("RL_news01.png"_spr);
     announceSpr->setScale(0.7f);
@@ -282,7 +273,6 @@ bool RLMenuLayer::init() {
     achievementItem->setPosition({infoButton->getPositionX(), infoButton->getPositionY() + 120});
     infoMenu->addChild(achievementItem);
 
-    // news button above discord
     // @geode-ignore(unknown-resource)
     auto browserSpr = CCSprite::createWithSpriteFrameName("RL_browser01.png"_spr);
     browserSpr->setScale(0.7f);
@@ -577,10 +567,6 @@ void RLMenuLayer::onQueueButton(CCObject* sender) {
     }
     auto queuePopup = RLQueueLevelPopup::create();
     queuePopup->show();
-}
-
-void RLMenuLayer::onDiscordButton(CCObject* sender) {
-    utils::web::openLinkInBrowser("https://discord.gg/jBf2wfBgVT");
 }
 
 void RLMenuLayer::onBrowserButton(CCObject* sender) {

@@ -2,6 +2,7 @@
 - removed the "Avg:" label that was layered badly
 - also nobody liked it
 - no cache on leaderboards
+- removed discord button (no need)
 
 # v2.0.2
 - hi

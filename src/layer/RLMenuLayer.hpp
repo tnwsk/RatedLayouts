@@ -35,7 +35,6 @@ protected:
     void onShopButton2(CCObject* sender);
     void onShopButton2Fail(CCObject* sender);
     void onSettingsButton(CCObject* sender);
-    void onDiscordButton(CCObject* sender);
     void onBrowserButton(CCObject* sender);
     void onSecretDialogueButton(CCObject* sender);
     void onSupporterButton(CCObject* sender);
