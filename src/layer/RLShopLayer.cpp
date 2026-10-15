@@ -421,7 +421,7 @@ void RLShopLayer::onShopkeeperDialog(CCObject* sender) {
             voiceline = "RL_huh01.ogg"_spr;
             break;
     }
-    dialogObj = DialogObject::create("ArcticWoof", response.c_str(), 1, 1.f, false, ccWHITE);
+    dialogObj = DialogObject::create("Splink", response.c_str(), 1, 1.f, false, ccWHITE);
 
     auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
     dialog->addToMainScene();

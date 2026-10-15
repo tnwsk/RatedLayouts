@@ -213,33 +213,33 @@ void RLBuyItemPopup::onBuy(CCObject* sender) {
     int current = rl::getPlayerRubies();
     if (current < m_value) {
         // gen random
-        std::string response = "You don't have enough <cr>rubies</c> to buy this item!";
+        std::string response = "You don't have enough <cr>pesos</c> to buy this item!";
         std::string voiceline = selectRandom("RL_no01.ogg"_spr, "RL_no02.ogg"_spr, "RL_no03.ogg"_spr);
         int v = rl::globalRNG()->generate<int>(1, 9);
         switch (v) {
             default: break;
             case 1: response = "You can't <cg>afford</c> that <cl>item</c>!"; break;
-            case 2: response = "You need more <cr>rubies</c> to get this!"; break;
+            case 2: response = "You need more <cr>pesos</c> to get this!"; break;
             case 3:
-                response = fmt::format("<cg>{}</c>, you need more <cr>rubies</c> to buy this item!",
+                response = fmt::format("<cg>{}</c>, you need more <cr>pesos</c> to buy this item!",
                                        GJAccountManager::get()->m_username);
                 break;
             case 4:
                 response =
-                    "You don't have enough <cr>rubies</c>! <d150><co>hah you "
+                    "You don't have enough <cr>pesos</c>! <d150><co>hah you "
                     "broke bud.</c>";
                 break;
             case 5:
-                response = fmt::format("Yikes! Your just <cr>{} rubies short</c>, can't let you have this.",
+                response = fmt::format("Yikes! Your just <cr>{} pesos short</c>, can't let you have this.",
                                        m_value - current);
                 break;
-            case 6: response = "Go play some <cl>maps</c> to earn more <cr>rubies</c>!"; break;
-            case 7: response = "Oh, you short on <cr>rubies</c>? That's unfortunate. womp womp"; break;
+            case 6: response = "Go play some <cl>maps</c> to earn more <cr>pesos</c>!"; break;
+            case 7: response = "Oh, you short on <cr>pesos</c>? That's unfortunate. womp womp"; break;
             case 8:
-                response = fmt::format("<cr>ERROR! INSUFFICIENT RUBIES! GO HOME</c> <cg>{}</c>!",
+                response = fmt::format("<cr>ERROR! INSUFFICIENT PESOS! GO HOME</c> <cg>{}</c>!",
                                        GJAccountManager::get()->m_username);
         }
-        DialogObject* obj = DialogObject::create("ArcticWoof", response.c_str(), 28, 1.f, false, ccWHITE);
+        DialogObject* obj = DialogObject::create("Splink", response.c_str(), 28, 1.f, false, ccWHITE);
         auto dialog = DialogLayer::createDialogLayer(obj, nullptr, 2);
         dialog->addToMainScene();
         dialog->animateInRandomSide();
