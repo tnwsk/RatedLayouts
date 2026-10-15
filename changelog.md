@@ -1,6 +1,7 @@
 # v2.0.3
 - removed the "Avg:" label that was layered badly
 - also nobody liked it
+- no cache on leaderboards
 
 # v2.0.2
 - hi
