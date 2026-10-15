@@ -2,14 +2,12 @@ name: Release Geode Mod
 
 on:
   workflow_run:
-    # This must match the "name:" from build.yml (not the filename)
     workflows: ["Build Geode Mod"]
     types: [completed]
 
 jobs:
   release:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    name: Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -21,9 +19,9 @@ jobs:
           fetch-depth: 0
 
       - name: Download build artifacts from build workflow run
-        id: download_artifacts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           set -euo pipefail
 
@@ -31,79 +29,52 @@ jobs:
           RUN_ID="${{ github.event.workflow_run.id }}"
 
           echo "Looking up artifacts for run $RUN_ID in $OWNER_REPO"
-          mkdir -p artifacts
-
-          ARTIFACTS_JSON=$(curl -s \
+          ARTIFACTS_JSON=$(curl -sSL \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${OWNER_REPO}/actions/runs/${RUN_ID}/artifacts")
 
-          # Prefer the artifact named "build-output" (matches build.yml upload)
-          ARTIFACT_ID=$(echo "$ARTIFACTS_JSON" | jq -r '.artifacts[] | select(.name=="build-output") | .id' || true)
+          echo "$ARTIFACTS_JSON" | jq '.artifacts' || true
 
-          # Fallback: if none named build-output, take the first artifact
-          if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" = "null" ]; then
-            ARTIFACT_ID=$(echo "$ARTIFACTS_JSON" | jq -r '.artifacts[0].id // empty')
+          ARTIFACT_ID=$(echo "$ARTIFACTS_JSON" | jq -r '.artifacts[] | select(.name=="build-output") | .id' | head -n 1)
+
+          if [ -z "${ARTIFACT_ID}" ] || [ "${ARTIFACT_ID}" = "null" ]; then
+            echo "No build-output artifact found for run $RUN_ID"
+            exit 1
           fi
 
-          if [ -z "$ARTIFACT_ID" ]; then
-            echo "No artifacts found for run $RUN_ID"
-            exit 0
-          fi
-
-          echo "Downloading artifact id: $ARTIFACT_ID"
-          curl -L \
+          echo "Downloading artifact id: ${ARTIFACT_ID}"
+          curl -fsSL \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/octet-stream" \
             "https://api.github.com/repos/${OWNER_REPO}/actions/artifacts/${ARTIFACT_ID}/zip" \
             -o artifact.zip
 
-          echo "Extracting artifact.zip to ./artifacts"
+          mkdir -p artifacts
           unzip -o artifact.zip -d artifacts
 
-          # Move any .geode files from nested dirs into ./artifacts root (so release uploader can find them)
           find artifacts -type f -name '*.geode' -exec mv -f {} artifacts/ \;
 
-          echo "Artifacts directory contents:"
+          echo "Release artifact files:"
           ls -la artifacts || true
 
-      - name: Check for Discord webhook URL
-        id: check-discord
-        shell: bash
-        run: |
-          if [ -n "${{ secrets.RELEASE_WEBHOOK }}" ]; then
-            echo "webhook-url=${{ secrets.RELEASE_WEBHOOK }}" >> "$GITHUB_OUTPUT"
-            echo "has-webhook=true" >> "$GITHUB_OUTPUT"
-            echo "Using RELEASE_WEBHOOK"
-          elif [ -n "${{ secrets.NIGHTLY_WEBHOOK }}" ]; then
-            echo "webhook-url=${{ secrets.NIGHTLY_WEBHOOK }}" >> "$GITHUB_OUTPUT"
-            echo "has-webhook=true" >> "$GITHUB_OUTPUT"
-            echo "Using NIGHTLY_WEBHOOK"
-          else
-            echo "has-webhook=false" >> "$GITHUB_OUTPUT"
-            echo "No webhook configured"
+          if ! find artifacts -maxdepth 1 -type f -name '*.geode' | grep -q .; then
+            echo "No .geode file available to release."
+            exit 1
           fi
 
       - name: Read mod version from mod.json
         id: mod-version
         shell: bash
         run: |
-          if [ ! -f mod.json ]; then
-            echo "mod.json not found" >&2
-            exit 1
-          fi
-
-          VERSION="$(python -c "import json,sys; print(json.load(open('mod.json'))['version'])")"
-
-          if [ -z "$VERSION" ]; then
-            echo "mod.json version is empty" >&2
-            exit 1
-          fi
-
-          TAG="$VERSION"
-
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          VERSION="$(python - <<'PY'
+          import json
+          with open('mod.json') as f:
+              print(json.load(f)['version'])
+          PY
+          )"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create and push tag if missing
         env:
@@ -120,7 +91,6 @@ jobs:
           else
             git tag "${TAG}"
             git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" "refs/tags/${TAG}"
-            echo "Pushed tag ${TAG}"
           fi
 
       - name: Create GitHub release and upload built artifact(s)
@@ -128,20 +98,7 @@ jobs:
         with:
           tag_name: ${{ steps.mod-version.outputs.tag }}
           name: ${{ steps.mod-version.outputs.tag }}
-          body: |
-            Release ${{ steps.mod-version.outputs.tag }}
-
-            Built from workflow run: ${{ github.event.workflow_run.html_url }}
-          # Upload any .geode files extracted from the build artifact
           files: |
             ./artifacts/*.geode
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Send Discord webhook
-        if: ${{ steps.check-discord.outputs.has-webhook == 'true' }}
-        uses: BlueWitherer/mod-discord-webhooks/geode@main
-        with:
-          webhook-url: ${{ steps.check-discord.outputs.webhook-url }}
-          changelog: |
-            Release ${{ steps.mod-version.outputs.tag }}
