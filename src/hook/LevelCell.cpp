@@ -20,11 +20,9 @@ class $modify(RLLevelCell, LevelCell) {
         bool m_isRejected = false;
         bool m_previouslyRejected = false;
         int m_difficulty = false;
-        async::TaskHolder<Result<matjson::Value>> m_fetchTask;
         int m_waitRetries = 0;  // used for waiting for level data to arrive
         bool m_coinOffsetApplied = false;
         bool m_iconOffsetApplied = false;
-        ~Fields() { m_fetchTask.cancel(); }
     };
 
     bool init() {
@@ -112,46 +110,6 @@ class $modify(RLLevelCell, LevelCell) {
                                                              rejectedLabel->getScale() / 2.f});
                 }
             }
-        }
-    }
-
-    void updateAverageDifficultyLabel(double averageDifficulty) {
-        if (!m_backgroundLayer) {
-            return;
-        }
-
-        if (m_fields->m_difficulty > 0) return;
-
-        if (auto existingLabel = m_backgroundLayer->getChildByID("average-difficulty-label")) {
-            existingLabel->removeFromParent();
-        }
-
-        auto labelText = fmt::format("Avg: {:.1f}", averageDifficulty);
-        auto averageLabel = CCLabelBMFont::create(labelText.c_str(), "bigFont.fnt");
-        if (!averageLabel) {
-            return;
-        }
-
-        averageLabel->setPosition({7.f, 5.f});
-        averageLabel->setAnchorPoint({0.f, 0.f});
-        averageLabel->setScale(0.25f);
-        averageLabel->setOpacity(200);
-        averageLabel->setColor({200, 220, 255});
-        averageLabel->setID("average-difficulty-label");
-        m_backgroundLayer->addChild(averageLabel, 10);
-
-        if (m_compactView) {
-            averageLabel->setPosition({5.f, 2.f});
-            averageLabel->setScale(0.2f);
-        }
-    }
-
-    void clearAverageDifficultyLabel() {
-        if (!m_backgroundLayer) {
-            return;
-        }
-        if (auto existingLabel = m_backgroundLayer->getChildByID("average-difficulty-label")) {
-            existingLabel->removeFromParent();
         }
     }
 
@@ -736,29 +694,6 @@ class $modify(RLLevelCell, LevelCell) {
         int levelId = static_cast<int>(level->m_levelID);
         bool hasPerms =
             (rl::isUserClassicRole() || rl::isUserPlatformerRole() || rl::isUserOwner());
-
-        this->clearAverageDifficultyLabel();
-        if (hasPerms && !CachedSettings::get()->disableFetchAverageDifficulty) {
-            Ref<LevelCell> cellRef = this;
-            m_fields->m_fetchTask.spawn(LocalEndpoint::build("getModLevel")
-                                            .ibody({{"levelId", levelId}})
-                                            .expires(2_mins)
-                                            .getWithAuth(),
-                                        [cellRef, levelId, this](Result<matjson::Value> res) {
-                if (res.isErr()) {
-                    log::warn(
-                        "Failed to fetch mod-level info for {}: {}", levelId, res.unwrapErr());
-                    return;
-                }
-
-                if (!cellRef) return;
-                if (!this->m_level || this->m_level->m_levelID != levelId) return;
-
-                auto json = std::move(res).unwrap();
-                double averageDifficulty = json["averageDifficulty"].asDouble().unwrapOrDefault();
-                this->updateAverageDifficultyLabel(averageDifficulty);
-            });
-        }
 
         // request rejection status before returning cached data so rejected UI can still update
         if (hasPerms && !CachedSettings::get()->disableRejectedLayouts) {

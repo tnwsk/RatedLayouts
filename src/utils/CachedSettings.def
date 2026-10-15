@@ -33,8 +33,7 @@
     X(disableModInfo, bool, "disableModInfo")                           \
     X(disableGarageStats, bool, "disableGarageStats")                   \
     X(disableRejectedLayouts, bool, "disableRejectedLayouts")           \
-    X(disableRejectedLayoutsGlow, bool, "disableRejectedLayoutsGlow")   \
-    X(disableFetchAverageDifficulty, bool, "disableFetchAverageDifficulty")
+    X(disableRejectedLayoutsGlow, bool, "disableRejectedLayoutsGlow")
 
 /// Takes a macro `X(NAME, MODIDS...)`.
 #define RL_SAVED_MODS(X)                                \
