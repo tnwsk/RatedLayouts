@@ -1,47 +1,96 @@
 name: Release Geode Mod
 
 on:
-    push:
-        tags:
-            - "v*"
+  workflow_run:
+    workflows: ["build.yml"]
+    types: [completed]
 
 jobs:
-    release:
-        name: Release
-        runs-on: ubuntu-latest
-        permissions:
-            contents: write
+  release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-        steps:
-            - uses: actions/checkout@v6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
 
-            - name: Check for Discord webhook URL
-              id: check-discord
-              run: |
-                  if [ -n "${{ secrets.RELEASE_WEBHOOK }}" ]; then
-                  echo "webhook-url=${{ secrets.RELEASE_WEBHOOK }}" >> $GITHUB_OUTPUT
-                  echo "has-webhook=true" >> $GITHUB_OUTPUT
-                  echo "Using RELEASE_WEBHOOK"
-                  elif [ -n "${{ secrets.NIGHTLY_WEBHOOK }}" ]; then
-                  echo "webhook-url=${{ secrets.NIGHTLY_WEBHOOK }}" >> $GITHUB_OUTPUT
-                  echo "has-webhook=true" >> $GITHUB_OUTPUT
-                  echo "Using NIGHTLY_WEBHOOK"
-                  else
-                  echo "has-webhook=false" >> $GITHUB_OUTPUT
-                  echo "No webhook configured"
-                  fi
+      - name: Check for Discord webhook URL
+        id: check-discord
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.RELEASE_WEBHOOK }}" ]; then
+            echo "webhook-url=${{ secrets.RELEASE_WEBHOOK }}" >> "$GITHUB_OUTPUT"
+            echo "has-webhook=true" >> "$GITHUB_OUTPUT"
+            echo "Using RELEASE_WEBHOOK"
+          elif [ -n "${{ secrets.NIGHTLY_WEBHOOK }}" ]; then
+            echo "webhook-url=${{ secrets.NIGHTLY_WEBHOOK }}" >> "$GITHUB_OUTPUT"
+            echo "has-webhook=true" >> "$GITHUB_OUTPUT"
+            echo "Using NIGHTLY_WEBHOOK"
+          else
+            echo "has-webhook=false" >> "$GITHUB_OUTPUT"
+            echo "No webhook configured"
+          fi
 
-            - name: Publish release
-              id: publish-release
-              uses: BlueWitherer/release-geode-mod@main
-              with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  workflow: build.yml
+      - name: Read mod version from mod.json
+        id: mod-version
+        shell: bash
+        run: |
+          if [ ! -f mod.json ]; then
+            echo "mod.json not found" >&2
+            exit 1
+          fi
 
-            - name: Send Discord webhook
-              if: ${{ steps.check-discord.outputs.has-webhook == 'true' }}
-              uses: BlueWitherer/mod-discord-webhooks/geode@main
-              with:
-                  webhook-url: ${{ steps.check-discord.outputs.webhook-url }}
-                  changelog: ${{ steps.publish-release.outputs.changelog }}
+          VERSION="$(python -c "import json; print(json.load(open('mod.json'))['version'])")"
 
+          if [ -z "$VERSION" ]; then
+            echo "mod.json version is empty" >&2
+            exit 1
+          fi
+
+          TAG="v$VERSION"
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag if missing
+        env:
+          TAG: ${{ steps.mod-version.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --tags --force
+
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "Tag ${TAG} already exists"
+          else
+            git tag "${TAG}"
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" "refs/tags/${TAG}"
+            echo "Pushed tag ${TAG}"
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.mod-version.outputs.tag }}
+          name: ${{ steps.mod-version.outputs.tag }}
+          body: |
+            Release ${{ steps.mod-version.outputs.tag }}
+
+            Built from workflow run: ${{ github.event.workflow_run.html_url }}
+          draft: false
+          prerelease: false
+
+      - name: Send Discord webhook
+        if: ${{ steps.check-discord.outputs.has-webhook == 'true' }}
+        uses: BlueWitherer/mod-discord-webhooks/geode@main
+        with:
+          webhook-url: ${{ steps.check-discord.outputs.webhook-url }}
+          changelog: |
+            Release ${{ steps.mod-version.outputs.tag }}
