@@ -36,7 +36,7 @@ jobs:
             exit 1
           fi
 
-          TAG="v$VERSION"
+          TAG="$VERSION"
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"

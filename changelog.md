@@ -1,3 +1,10 @@
+# v2.1.3
+- further branding
+- readme changed
+- coin texture changed to default user coin
+- another thing i think idr
+
+
 # v2.1.2
 - sparks are now wadiyas
 - planets are now lithuanias
