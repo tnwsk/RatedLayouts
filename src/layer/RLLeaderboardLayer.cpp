@@ -61,7 +61,7 @@ bool RLLeaderboardLayer::init() {
 
     auto starsTab = TabButton::create(TabBaseColor::Unselected,
                                       TabBaseColor::UnselectedDark,
-                                      "Top Sparks",
+                                      "Top Wadiyas",
                                       this,
                                       menu_selector(RLLeaderboardLayer::onLeaderboardTypeButton));
     float centerX = m_userListNode->getContentSize().width / 2.f;
@@ -77,7 +77,7 @@ bool RLLeaderboardLayer::init() {
 
     auto planetsTab = TabButton::create(TabBaseColor::Unselected,
                                         TabBaseColor::UnselectedDark,
-                                        "Top Planets",
+                                        "Top Lithuanias",
                                         this,
                                         menu_selector(RLLeaderboardLayer::onLeaderboardTypeButton));
     planetsTab->setTag(3);
@@ -225,15 +225,15 @@ void RLLeaderboardLayer::refresh(CCObject* sender, int type) {
 void RLLeaderboardLayer::onInfoButton(CCObject* sender) {
     MDPopup::create("Rated Maps Leaderboard",
                     "The leaderboard shows the top players in <cb>Rated Maps</c> based "
-                    "on <cl>Sparks</c>, <co>Planets</c>, <cb>Blue Coins</c>, <cf>Blueprint "
+                    "on <cl>Wadiyas</c>, <co>Lithuanias</c>, <cb>Blue Coins</c>, <cf>Blueprint "
                     "Points</c> and <cg>Votes</c>. "
                     "You can "
                     "view each category by selecting the tabs.\n\n"
-                    "- <cl>Sparks</c> are earned by completing a <cb>Classic Rated Maps</c> "
+                    "- <cl>Wadiyas</c> are earned by completing a <cb>Classic Rated Maps</c> "
                     "level and are only "
                     "counted when "
                     "beaten legitimately.\n"
-                    "- <co>Planets</c> are earned by completing a <cb>Platformer Rated Maps</c> "
+                    "- <co>Lithuanias</c> are earned by completing a <cb>Platformer Rated Maps</c> "
                     "level and are only "
                     "counted when "
                     "beaten legitimately.\n"

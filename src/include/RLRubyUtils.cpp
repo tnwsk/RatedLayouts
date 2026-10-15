@@ -113,14 +113,14 @@ bool rl::persistCollectedRubies(int levelId, int totalRuby, int collected) noexc
 }
 
 int rl::getPlayerRubies() noexcept {
-    int current = Mod::get()->getSavedValue<int>("rubies", 0);
+    int current = Mod::get()->getSavedValue<int>("pesos", 0);
     if (current < 0) {
         current = std::abs(current);  // make negative rubies to positive
-        Mod::get()->setSavedValue<int>("rubies", std::max(0, current));
+        Mod::get()->setSavedValue<int>("pesos", std::max(0, current));
     }
     return current;
 }
 
 void rl::setPlayerRubies(int amount) noexcept {
-    Mod::get()->setSavedValue<int>("rubies", std::max(0, amount));
+    Mod::get()->setSavedValue<int>("pesos", std::max(0, amount));
 }

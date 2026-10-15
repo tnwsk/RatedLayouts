@@ -245,7 +245,7 @@ void RLShopLayer::initDropdownMenu() {
     m_dropdownMenu->addCell(dropdownLabel);
     dropdownLabel->setPositionX(5.f);
 
-    auto resetBtn = CCLabelBMFont::create("Clear Rubies", "bigFont.fnt");
+    auto resetBtn = CCLabelBMFont::create("Clear Pesos", "bigFont.fnt");
     resetBtn->limitLabelWidth(100, .7, .3);
     m_dropdownMenu->addCell(resetBtn);
     resetBtn->setPositionX(15.f);
@@ -401,7 +401,7 @@ void RLShopLayer::onShopkeeperDialog(CCObject* sender) {
             response = "Ask <cp>The Oracle</c> about <cf>me</c>! That would be funny."; break;
         case 14:
             response =
-                "Would you like to buy my entire shop for <cr>100k Rubies?</c> I know someone is <cy>interested</c> :P";
+                "Would you like to buy my entire shop for <cr>100k Pesos?</c> I know someone is <cy>interested</c> :P";
             break;
         case 15:
         case 16:
@@ -685,11 +685,11 @@ void RLShopLayer::onResetRubies() {
     //        ->show();
     //    return;
     //}
-    createQuickPopup("Clear Rubies",
+    createQuickPopup("Clear Pesos",
                      "Are you sure you want to <cr>clear your "
-                     "rubies</c> and <co>all your brought cosmetics</c>?\n"
-                     "<cy>This will clear all your rubies to zero, reset your redeemed codes and all your collected "
-                     "rubies but you can reclaim rubies back "
+                     "pesos</c> and <co>all your brought cosmetics</c>?\n"
+                     "<cy>This will clear all your pesos to zero, reset your redeemed codes and all your collected "
+                     "pesos but you can reclaim pesos back "
                      "from any completed rated maps.</c>",
                      "No",
                      "Yes",
@@ -725,7 +725,7 @@ void RLShopLayer::onResetRubies() {
 
                          if (rl::getPlayerRubies() > 0) {
                              rl::setPlayerRubies(0);
-                             Notification::create("Rubies have been reset!", NotificationIcon::Info)->show();
+                             Notification::create("Pesos have been reset!", NotificationIcon::Info)->show();
                              FMODAudioEngine::sharedEngine()->playEffect("geode.loader/newNotif02.ogg");
                          }
                          m_rubyLabel->setTargetCount(0);

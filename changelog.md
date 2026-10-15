@@ -1,3 +1,9 @@
+# v2.1.2
+- sparks are now wadiyas
+- planets are now lithuanias
+- rubies are now pesos
+- some strings are probably still not changed, more to come soon
+
 # v2.1.0
 - layouts are now maps
 - like every single instance of layout

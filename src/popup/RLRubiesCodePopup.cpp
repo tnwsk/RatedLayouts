@@ -25,7 +25,7 @@ bool RLRubiesCodePopup::init() {
     if (!Popup::init(440.f, 280.f, "GJ_square02.png"))
         return false;
 
-    setTitle("Oracle Rubies Codes");
+    setTitle("Oracle Pesos Codes");
     addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupGold, false);
 
     CCSize listSize = {
@@ -106,7 +106,7 @@ void RLRubiesCodePopup::fetchCodes() {
     m_fetchTask.spawn(web::WebRequest().bodyJSON(body).post(std::string(rl::BASE_API_URL) + "/getRubiesCode"),
         [self, loadingSpinner](web::WebResponse response) {
             if (!response.ok()) {
-                Notification::create("Failed to fetch rubies codes", NotificationIcon::Error)->show();
+                Notification::create("Failed to fetch pesos codes", NotificationIcon::Error)->show();
                 log::warn("getRubiesCode request failed {}", response.code());
                 if (loadingSpinner)
                     loadingSpinner->removeFromParent();
@@ -213,7 +213,7 @@ void RLRubiesCodePopup::fetchCodes() {
             }
 
             if (idx == 0 && self->m_listNode) {
-                auto noDataLabel = CCLabelBMFont::create("No rubies codes found", "goldFont.fnt");
+                auto noDataLabel = CCLabelBMFont::create("No pesos codes found", "goldFont.fnt");
                 noDataLabel->setScale(0.45f);
                 noDataLabel->setPosition(self->m_listNode->getContentSize() / 2.f);
                 self->m_listNode->addChild(noDataLabel);
@@ -227,7 +227,7 @@ void RLRubiesCodePopup::fetchCodes() {
             }
             self->m_listNode->getScrollLayer()->m_contentLayer->updateLayout();
             self->m_listNode->scrollToTop();
-            self->m_title->setString(fmt::format("Oracle Rubies Codes ({})", idx).c_str());
+            self->m_title->setString(fmt::format("Oracle Pesos Codes ({})", idx).c_str());
         });
 }
 
@@ -266,8 +266,8 @@ void RLRubiesCodePopup::onDeleteCode(CCObject* sender) {
     auto const& item = m_codeItems[idx];
 
     geode::createQuickPopup(
-        "Delete Rubies Code",
-        fmt::format("Delete code <cg>{}</c> ({} rubies)?", item.code, item.reward).c_str(),
+        "Delete Pesos Code",
+        fmt::format("Delete code <cg>{}</c> ({} pesos)?", item.code, item.reward).c_str(),
         "Cancel",
         "Delete",
         [self = this, idx, item](auto, bool yes) {
