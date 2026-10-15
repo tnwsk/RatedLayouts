@@ -1,7 +1,7 @@
 #include "RLSelectSends.hpp"
 #include "RLConstants.hpp"
 #include "layer/RLLevelBrowserLayer.hpp"
-#include "Geode/ui/Layout.hpp"
+#include "Geode/ui/Map.hpp"
 #include "Geode/ui/MDTextArea.hpp"
 #include "Geode/utils/function.hpp"
 #include <Geode/Geode.hpp>
@@ -54,7 +54,7 @@ bool RLSelectSends::init() {
         m_buttonMenu->addChild(oldBtn);
 
         auto queueBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("Queued Layouts", 180, true, "goldFont.fnt", "geode.loader/GE_button_02.png", 30.f, 1.f),
+            ButtonSprite::create("Queued Maps", 180, true, "goldFont.fnt", "geode.loader/GE_button_02.png", 30.f, 1.f),
             this,
             menu_selector(RLSelectSends::onQueueBtn));
         queueBtn->m_scaleMultiplier = 1.05f;
@@ -84,7 +84,7 @@ void RLSelectSends::onAllSends(CCObject* sender) {
     RLLevelBrowserLayer::ParamList params;
     params.emplace_back("type", "1");
     auto browserLayer = RLLevelBrowserLayer::create(
-        RLLevelBrowserLayer::Mode::Sent, params, "Newest Sent Layouts");
+        RLLevelBrowserLayer::Mode::Sent, params, "Newest Sent Maps");
     auto scene = CCScene::create();
     scene->addChild(browserLayer);
     auto transitionFade = CCTransitionFade::create(0.5f, scene);
@@ -96,7 +96,7 @@ void RLSelectSends::onThreePlusSends(CCObject* sender) {
     RLLevelBrowserLayer::ParamList params;
     params.emplace_back("type", "4");
     auto browserLayer = RLLevelBrowserLayer::create(
-        RLLevelBrowserLayer::Mode::Sent, params, "3+ Sent Layouts");
+        RLLevelBrowserLayer::Mode::Sent, params, "3+ Sent Maps");
     auto scene = CCScene::create();
     scene->addChild(browserLayer);
     auto transitionFade = CCTransitionFade::create(0.5f, scene);
@@ -110,7 +110,7 @@ void RLSelectSends::onLegendarySends(CCObject* sender) {
     auto browserLayer =
         RLLevelBrowserLayer::create(RLLevelBrowserLayer::Mode::LegendarySends,
             params,
-            "Legendary Sent Layouts");
+            "Legendary Sent Maps");
     auto scene = CCScene::create();
     scene->addChild(browserLayer);
     auto transitionFade = CCTransitionFade::create(0.5f, scene);
@@ -122,7 +122,7 @@ void RLSelectSends::onOldestSend(CCObject* sender) {
     RLLevelBrowserLayer::ParamList params;
     params.emplace_back("type", "6");
     auto browserLayer = RLLevelBrowserLayer::create(
-        RLLevelBrowserLayer::Mode::Sent, params, "Oldest Sent Layouts");
+        RLLevelBrowserLayer::Mode::Sent, params, "Oldest Sent Maps");
     auto scene = CCScene::create();
     scene->addChild(browserLayer);
     auto transitionFade = CCTransitionFade::create(0.5f, scene);
@@ -134,7 +134,7 @@ void RLSelectSends::onQueueBtn(CCObject* sender) {
     RLLevelBrowserLayer::ParamList params;
     params.emplace_back("type", "7");
     auto browserLayer = RLLevelBrowserLayer::create(
-        RLLevelBrowserLayer::Mode::Sent, params, "Queued Layouts");
+        RLLevelBrowserLayer::Mode::Sent, params, "Queued Maps");
     auto scene = CCScene::create();
     scene->addChild(browserLayer);
     auto transitionFade = CCTransitionFade::create(0.5f, scene);

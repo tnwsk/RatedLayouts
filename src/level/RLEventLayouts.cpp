@@ -1,4 +1,4 @@
-#include "RLEventLayouts.hpp"
+#include "RLEventMaps.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/ui/NineSlice.hpp>
 
@@ -460,17 +460,17 @@ bool RLEventLayouts::init() {
 
 void RLEventLayouts::onInfo(CCObject* sender) {
     MDPopup::create(
-        "Event Layouts",
-        "Play <cg>daily</c>, <cy>weekly</c>, and <cp>monthly</c> rated layouts curated by the <cr>Layout Admins.</c>\n\n"
-        "Each layout features a <cb>unique selection</c> of levels handpicked for their <co>gameplay and layout design!</c>\n\n"
-        "If you want to play <cg>Past Event Layouts</c>, click the <co>Safe</c> button at the bottom-left of the popup to view previous event layouts.\n\n"
-        "### <co>Daily Layouts</c> refresh every 24 hours, <cy>Weekly Layouts</c> every 7 days, and <cp>Monthly Layouts</c> every 30 days.\n\n"
-        "*<cy>All event layouts are set manually, so sometimes layouts might be there longer than expected</c>*\n\n"
+        "Event Maps",
+        "Play <cg>daily</c>, <cy>weekly</c>, and <cp>monthly</c> rated maps curated by the <cr>Map Admins.</c>\n\n"
+        "Each map features a <cb>unique selection</c> of levels handpicked for their <co>gameplay and map design!</c>\n\n"
+        "If you want to play <cg>Past Event Maps</c>, click the <co>Safe</c> button at the bottom-left of the popup to view previous event maps.\n\n"
+        "### <co>Daily Maps</c> refresh every 24 hours, <cy>Weekly Maps</c> every 7 days, and <cp>Monthly Maps</c> every 30 days.\n\n"
+        "*<cy>All event maps are set manually, so sometimes maps might be there longer than expected</c>*\n\n"
         "\r\n\r\n---\r\n\r\n"
-        "- <cg>**Daily Layout**</c> showcase <cl>Easy Layouts</c> *(Easy to Insane Difficulty)* for you to grind and play various layouts.\n"
-        "- <cy>**Weekly Layout**</c> showcase more <cr>challenging layouts</c> to play *(Easy to Hard Demons Difficulty)*.\n"
-        "- <cp>**Monthly Layout**</c> showcase themed <cp>Layouts</c> that relate to the current month or showcase well-made/hyped layouts. "
-        "Monthly layouts often showcase <cr>Very hard layouts</c> or <cl>Easy Layouts</c> depending on what the monthly layouts have to offer.\n",
+        "- <cg>**Daily Map**</c> showcase <cl>Easy Maps</c> *(Easy to Insane Difficulty)* for you to grind and play various maps.\n"
+        "- <cy>**Weekly Map**</c> showcase more <cr>challenging maps</c> to play *(Easy to Hard Demons Difficulty)*.\n"
+        "- <cp>**Monthly Map**</c> showcase themed <cp>Maps</c> that relate to the current month or showcase well-made/hyped maps. "
+        "Monthly maps often showcase <cr>Very hard maps</c> or <cl>Easy Maps</c> depending on what the monthly maps have to offer.\n",
         "OK")
         ->show();
 }
@@ -531,7 +531,7 @@ void RLEventLayouts::update(float dt) {
                     psec.pendingKey.clear();
                     psec.pendingLevelId = -1;
                 } else {
-                    log::debug("RLEventLayouts: Loading level {} into LevelCell",
+                    log::debug("RLEventMaps: Loading level {} into LevelCell",
                         psec.pendingLevelId);
                     if (psec.levelCell) {
                         psec.levelCell->loadFromLevel(match);
@@ -577,7 +577,7 @@ void RLEventLayouts::update(float dt) {
                     psec.pendingPlatKey.clear();
                     psec.pendingPlatLevelId = -1;
                 } else {
-                    log::debug("RLEventLayouts: Loading plat level {} into PlatCell",
+                    log::debug("RLEventMaps: Loading plat level {} into PlatCell",
                         psec.pendingPlatLevelId);
                     if (psec.platLevelCell) {
                         psec.platLevelCell->loadFromLevel(match);

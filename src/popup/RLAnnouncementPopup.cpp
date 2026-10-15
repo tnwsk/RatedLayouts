@@ -54,7 +54,7 @@ bool RLAnnouncementPopup::init() {
 void RLAnnouncementPopup::onClick(CCObject* sender) {
     createQuickPopup(
         "Gauntlet News Redirect",
-        "This will open a link relating to the <cl>Layout Gauntlet</c> in your web browser.\n<cy>Continue?</c>",
+        "This will open a link relating to the <cl>Map Gauntlet</c> in your web browser.\n<cy>Continue?</c>",
         "No",
         "Yes",
         [this](auto, bool yes) {

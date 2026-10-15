@@ -56,8 +56,8 @@ void RLAddDialogue::onInfo(CCObject* sender) {
         "2. Dialogue must be <cg>appropriate</c>. Submitting an <cr>inappropriate dialogue</c> may result in a <cr>ban</c> from using this feature.\n"
         "3. Do <cr>not</c> bypass any of these rules.\n"
         "### <cy>By submitting custom dialogue, you agree to follow these rules.\n"
-        "### <cl>The Rated Layouts team reserves the rights to remove any dialogue without notice.</c>\n"
-        "### <cc>All dialogue is logged and reviewed by Layout Admins/Mods.</c>";
+        "### <cl>The Rated Maps team reserves the rights to remove any dialogue without notice.</c>\n"
+        "### <cc>All dialogue is logged and reviewed by Map Admins/Mods.</c>";
     MDPopup::create(
         "Custom Dialogue Rules",
         content.c_str(),
@@ -73,7 +73,7 @@ void RLAddDialogue::onPreview(CCObject* sender) {
         return;
     }
     DialogObject* dialogObj = DialogObject::create(
-        "Layout Creator",
+        "Map Creator",
         dialogueText.c_str(),
         28,
         1.f,

@@ -69,7 +69,7 @@ bool RLSearchLayer::init() {
     searchInputBg->setOpacity(100);
     m_searchInputMenu->addChild(searchInputBg, -1);
 
-    m_searchInput = TextInput::create(245.f, "Search Layouts...");
+    m_searchInput = TextInput::create(245.f, "Search Maps...");
     m_searchInput->setID("search-input");
     m_searchInput->setTextAlign(TextInputAlign::Left);
     m_searchInput->setCommonFilter(CommonFilter::Name);
@@ -429,14 +429,14 @@ bool RLSearchLayer::init() {
 
 void RLSearchLayer::onInfoButton(CCObject* sender) {
     FLAlertLayer::create(
-        "Rated Layouts Search",
-        "Use the <cg>search bar</c> to find <cl>Rated Layouts Levels</c> by "
+        "Rated Maps Search",
+        "Use the <cg>search bar</c> to find <cl>Rated Maps Levels</c> by "
         "<co>name or keywords.</c>\n"
         "Use the <cr>difficulty filter</c> to select which "
-        "<cl>layout difficulties</c> to include in the search.\n"
+        "<cl>map difficulties</c> to include in the search.\n"
         "Press the <cg>Search button</c> to perform the search with "
         "the selected criteria.\n"
-        "To view the <cl>recently rated layouts</c>, leave the search bar empty, "
+        "To view the <cl>recently rated maps</c>, leave the search bar empty, "
         "then press the <cg>Search</c>.",
         "OK")
         ->show();
@@ -680,7 +680,7 @@ void RLSearchLayer::onSearchButton(CCObject* sender) {
     if (menuItem)
         menuItem->setEnabled(true);
     auto browserLayer = RLLevelBrowserLayer::create(
-        RLLevelBrowserLayer::Mode::Search, params, "Layouts Search");
+        RLLevelBrowserLayer::Mode::Search, params, "Maps Search");
     auto scene = CCScene::create();
     scene->addChild(browserLayer);
     auto transitionFade = CCTransitionFade::create(0.5f, scene);

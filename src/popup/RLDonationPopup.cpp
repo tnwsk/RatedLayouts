@@ -68,7 +68,7 @@ bool RLDonationPopup::init() {
     clip->addChild(glowSprite);
 
     // title
-    auto titleLabel = CCLabelBMFont::create("Support Rated Layouts!", "bigFont.fnt");
+    auto titleLabel = CCLabelBMFont::create("Support Rated Maps!", "bigFont.fnt");
     titleLabel->setScale(0.75f);
     titleLabel->setColor({255, 148, 255});
     titleLabel->setPosition(
@@ -110,7 +110,7 @@ bool RLDonationPopup::init() {
 
     // desc1
     auto desc1 = CCLabelBMFont::create(
-        "Get a special badge shown to\nall players and a colored comment within Rated Layouts!", "bigFont.fnt");
+        "Get a special badge shown to\nall players and a colored comment within Rated Maps!", "bigFont.fnt");
     desc1->limitLabelWidth(mainLayerWidthSpacing, 0.5f, 0.3f);
     desc1->setPosition(
         {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 90.f});
@@ -125,7 +125,7 @@ bool RLDonationPopup::init() {
     m_mainLayer->addChild(heading2);
     // desc2
     auto desc2 = CCLabelBMFont::create(
-        "Access exclusive and up-coming features added in Rated Layouts.\nAnd get early access to these new features!",
+        "Access exclusive and up-coming features added in Rated Maps.\nAnd get early access to these new features!",
         "bigFont.fnt");
     desc2->limitLabelWidth(mainLayerWidthSpacing, 0.5f, 0.3f);
     desc2->setPosition(
@@ -134,7 +134,7 @@ bool RLDonationPopup::init() {
     m_mainLayer->addChild(desc2);
 
     // title3
-    auto heading3 = CCLabelBMFont::create("Priority Layout Requests", "goldFont.fnt");
+    auto heading3 = CCLabelBMFont::create("Priority Map Requests", "goldFont.fnt");
     heading3->limitLabelWidth(mainLayerWidthSpacing, 0.75f, 0.7f);
     heading3->setPosition(
         {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 190.f});
@@ -142,7 +142,7 @@ bool RLDonationPopup::init() {
 
     // desc3
     auto desc3 = CCLabelBMFont::create(
-        "Request priority consideration for your layout\nsubmissions and get faster review from the team.",
+        "Request priority consideration for your map\nsubmissions and get faster review from the team.",
         "bigFont.fnt");
     desc3->limitLabelWidth(mainLayerWidthSpacing, 0.5f, 0.3f);
     desc3->setPosition(

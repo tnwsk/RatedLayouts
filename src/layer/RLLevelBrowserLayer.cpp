@@ -202,7 +202,7 @@ void RLLevelBrowserLayer::setupControls(CCMenu* uiMenu) {
     uiMenu->setPosition({0, 0});
 
     auto winSize = CCDirector::sharedDirector()->getWinSize();
-    const char* title = m_title.empty() ? "Rated Layouts" : m_title.c_str();
+    const char* title = m_title.empty() ? "Rated Maps" : m_title.c_str();
 
     addBackButton(this, BackButtonStyle::Pink);
 
@@ -916,10 +916,10 @@ void RLLevelBrowserLayer::onDeleteFilter(CCObject* sender) {
 
 void RLLevelBrowserLayer::onInfoButton(CCObject* sender) {
     FLAlertLayer::create(
-        "Layouts",
-        "<cl>Layout</c> listed here rewards <cl>Spark</c> or <co>Planets</c> if is rated by the "
-        "<cr>Layout Admins</c>.\n\n"
-        "For sent layouts, each of the layouts here has at least <cg>one sent by Layout Mods</c> "
+        "Maps",
+        "<cl>Map</c> listed here rewards <cl>Spark</c> or <co>Planets</c> if is rated by the "
+        "<cr>Map Admins</c>.\n\n"
+        "For sent maps, each of the maps here has at least <cg>one sent by Map Mods</c> "
         "and "
         "can only be rated when it has at least <cb>3+ sends</c>.",
         "OK")

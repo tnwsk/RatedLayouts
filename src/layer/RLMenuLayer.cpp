@@ -11,7 +11,7 @@
 #include <cue/RepeatingBackground.hpp>
 #include <optional>
 
-#include "level/RLEventLayouts.hpp"
+#include "level/RLEventMaps.hpp"
 #include "level/RLNotificationOverlay.hpp"
 #include "level/RLSelectSends.hpp"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
@@ -197,31 +197,31 @@ bool RLMenuLayer::init() {
     auto sentSpr = CCSprite::createWithSpriteFrameName("RL_sent01.png"_spr);
     auto sentItem =
         CCMenuItemSpriteExtra::create(sentSpr, this, menu_selector(RLMenuLayer::onSentLayouts));
-    sentItem->setID("sent-layouts-button");
+    sentItem->setID("sent-maps-button");
     mainMenu->addChild(sentItem);
 
     auto searchSpr = CCSprite::createWithSpriteFrameName("RL_search01.png"_spr);
     auto searchItem =
         CCMenuItemSpriteExtra::create(searchSpr, this, menu_selector(RLMenuLayer::onSearchLayouts));
-    searchItem->setID("search-layouts-button");
+    searchItem->setID("search-maps-button");
     mainMenu->addChild(searchItem);
 
     auto dailySpr = CCSprite::createWithSpriteFrameName("RL_daily01.png"_spr);
     auto dailyItem =
         CCMenuItemSpriteExtra::create(dailySpr, this, menu_selector(RLMenuLayer::onDailyLayouts));
-    dailyItem->setID("daily-layouts-button");
+    dailyItem->setID("daily-maps-button");
     mainMenu->addChild(dailyItem);
 
     auto weeklySpr = CCSprite::createWithSpriteFrameName("RL_weekly01.png"_spr);
     auto weeklyItem =
         CCMenuItemSpriteExtra::create(weeklySpr, this, menu_selector(RLMenuLayer::onWeeklyLayouts));
-    weeklyItem->setID("weekly-layouts-button");
+    weeklyItem->setID("weekly-maps-button");
     mainMenu->addChild(weeklyItem);
 
     auto monthlySpr = CCSprite::createWithSpriteFrameName("RL_monthly01.png"_spr);
     auto monthlyItem = CCMenuItemSpriteExtra::create(
         monthlySpr, this, menu_selector(RLMenuLayer::onMonthlyLayouts));
-    monthlyItem->setID("monthly-layouts-button");
+    monthlyItem->setID("monthly-maps-button");
     mainMenu->addChild(monthlyItem);
 
     CCSprite* unknownSpr = CCSpriteGrayscale::createWithSpriteFrameName("RL_unknownBtn.png"_spr);
@@ -560,7 +560,7 @@ void RLMenuLayer::onQueueButton(CCObject* sender) {
     if (!rl::isUserSupporter()) {
         FLAlertLayer::create(
             "Feature Unavailable",
-            "This feature is only <cg>available</c> for <cp>Layout Supporters and Boosters</c>.",
+            "This feature is only <cg>available</c> for <cp>Map Supporters and Boosters</c>.",
             "OK")
             ->show();
         return;
@@ -570,17 +570,17 @@ void RLMenuLayer::onQueueButton(CCObject* sender) {
 }
 
 void RLMenuLayer::onBrowserButton(CCObject* sender) {
-    createQuickPopup("Rated Layouts Browser",
-                     "You will be redirected to the <cl>Rated Layouts Browser "
+    createQuickPopup("Rated Maps Browser",
+                     "You will be redirected to the <cl>Rated Maps Browser "
                      "website</c> in your web browser.\n<cy>Continue?</c>",
                      "No",
                      "Yes",
                      [](auto, bool yes) {
         if (!yes) return;
-        Notification::create("Opening Rated Layouts Browser in your web browser",
+        Notification::create("Opening Rated Maps Browser in your web browser",
                              NotificationIcon::Info)
             ->show();
-        utils::web::openLinkInBrowser("https://ratedlayouts.arcticwoof.xyz");
+        utils::web::openLinkInBrowser("https://ratedmaps.arcticwoof.xyz");
         RLAchievements::onReward("misc_browser");
     });
 }
@@ -590,7 +590,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     case 0: {
         DialogObject* dialogObj =
             DialogObject::create("ArcticWoof",
-                                 "The <co>Rated Layouts Demon List</c> isn't done yet...",
+                                 "The <co>Rated Maps Demon List</c> isn't done yet...",
                                  28,
                                  1.f,
                                  false,
@@ -746,7 +746,7 @@ void RLMenuLayer::onDemonListButton(CCObject* sender) {
     case 10: {
         DialogObject* dialogObj =
             DialogObject::create("ArcticWoof",
-                                 "... I should seriously stop turning <cl>Rated Layouts</c> into "
+                                 "... I should seriously stop turning <cl>Rated Maps</c> into "
                                  "<cg>Geometry Dash Dos</c>.",
                                  28,
                                  1.f,
@@ -886,7 +886,7 @@ void RLMenuLayer::onUnknownButton(CCObject* sender) {
             }
 
             DialogObject* dialogObj = DialogObject::create(
-                "Layout Creator", text.c_str(), 28, 1.f, false, ccWHITE);
+                "Map Creator", text.c_str(), 28, 1.f, false, ccWHITE);
             if (dialogObj) {
                 auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
                 dialog->addToMainScene();
@@ -944,7 +944,7 @@ void RLMenuLayer::onUnknownButton(CCObject* sender) {
         }
 
         DialogObject* dialogObj =
-            DialogObject::create("Layout Creator", text.c_str(), 28, 1.f, false, ccWHITE);
+            DialogObject::create("Map Creator", text.c_str(), 28, 1.f, false, ccWHITE);
         if (dialogObj) {
             auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
             dialog->addToMainScene();
@@ -1013,7 +1013,7 @@ void RLMenuLayer::onMonthlyLayouts(CCObject* sender) {
 
 void RLMenuLayer::onFeaturedLayouts(CCObject* sender) {
     auto browserLayer = RLLevelBrowserLayer::create(
-        RLLevelBrowserLayer::Mode::Featured, RLLevelBrowserLayer::ParamList(), "Featured Layouts");
+        RLLevelBrowserLayer::Mode::Featured, RLLevelBrowserLayer::ParamList(), "Featured Maps");
     auto scene = CCScene::create();
     scene->addChild(browserLayer);
     auto transitionFade = CCTransitionFade::create(0.5f, scene);
@@ -1031,7 +1031,7 @@ void RLMenuLayer::onSentLayouts(CCObject* sender) {
     RLLevelBrowserLayer::ParamList params;
     params.emplace_back("type", "1");
     auto browserLayer =
-        RLLevelBrowserLayer::create(RLLevelBrowserLayer::Mode::Sent, params, "Sent Layouts");
+        RLLevelBrowserLayer::create(RLLevelBrowserLayer::Mode::Sent, params, "Sent Maps");
     auto scene = CCScene::create();
     scene->addChild(browserLayer);
     auto transitionFade = CCTransitionFade::create(0.5f, scene);
@@ -1137,9 +1137,9 @@ void RLMenuLayer::showReadGuidePopup() {
     }
 
     Mod::get()->setSavedValue<bool>("hasReadGuide", true);
-    createQuickPopup("New to Rated Layouts?",
+    createQuickPopup("New to Rated Maps?",
                      "Do you want to read the <cg>guide</c> to learn more about <cl>Rated "
-                     "Layouts</c> and how it works?\n"
+                     "Maps</c> and how it works?\n"
                      "<cy>You can read this via the Info Button at the Bottom Left corner later if "
                      "you want.</c>",
                      "No",

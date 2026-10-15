@@ -97,7 +97,7 @@ bool RLNewsAnnouncementPopup::init() {
     if (!Popup::init(500.f, 280.f, "GJ_square02.png"))
         return false;
 
-    setTitle("Rated Layouts Announcements");
+    setTitle("Rated Maps Announcements");
     addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupBlue, false);
 
     auto cs = m_mainLayer->getScaledContentSize();

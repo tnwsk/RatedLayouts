@@ -1585,7 +1585,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
     }
 
     void onDevButton(CCObject* sender) {
-        auto popup = RLModRatePopup::create(RLModRatePopup::PopupRole::Dev, "Dev: Modify Layout", this->m_level);
+        auto popup = RLModRatePopup::create(RLModRatePopup::PopupRole::Dev, "Dev: Modify Map", this->m_level);
         if (popup) popup->show();
     }
     void onRoleButton(CCObject* sender) {
@@ -1611,34 +1611,34 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
         if (rl::isUserClassicMod() && !isPlatformer) {
             log::info("Role button clicked as Classic Mod");
             auto popup =
-                RLModRatePopup::create(RLModRatePopup::PopupRole::Mod, "Mod: Suggest Classic Layout", this->m_level);
+                RLModRatePopup::create(RLModRatePopup::PopupRole::Mod, "Mod: Suggest Classic Map", this->m_level);
             if (popup) popup->show();
         } else if (rl::isUserClassicAdmin() && !isPlatformer) {
             log::info("Role button clicked as Classic Admin");
             auto popup =
-                RLModRatePopup::create(RLModRatePopup::PopupRole::Admin, "Admin: Rate Classic Layout", this->m_level);
+                RLModRatePopup::create(RLModRatePopup::PopupRole::Admin, "Admin: Rate Classic Map", this->m_level);
             if (popup) popup->show();
         } else if (rl::isUserPlatformerMod() && isPlatformer) {
             log::info("Role button clicked as Plat Mod");
             auto popup =
-                RLModRatePopup::create(RLModRatePopup::PopupRole::Mod, "Mod: Suggest Platformer Layout", this->m_level);
+                RLModRatePopup::create(RLModRatePopup::PopupRole::Mod, "Mod: Suggest Platformer Map", this->m_level);
             if (popup) popup->show();
         } else if (rl::isUserPlatformerAdmin() && isPlatformer) {
             log::info("Role button clicked as Plat Admin");
             auto popup = RLModRatePopup::create(
-                RLModRatePopup::PopupRole::Admin, "Admin: Rate Platformer Layout", this->m_level);
+                RLModRatePopup::PopupRole::Admin, "Admin: Rate Platformer Map", this->m_level);
             if (popup) popup->show();
         } else {
             std::string desc;
             if (isPlatformer) {
                 desc =
-                    "You need to be a <cc>Platformer Layout Moderator</c> or "
-                    "<cr>Platformer Layout Admin</c> to access this panel on this "
+                    "You need to be a <cc>Platformer Map Moderator</c> or "
+                    "<cr>Platformer Map Admin</c> to access this panel on this "
                     "level.";
             } else {
                 desc =
-                    "You need to be a <cc>Classic Layout Moderator</c> or "
-                    "<cr>Classic Layout Admin</c> to access this panel on this "
+                    "You need to be a <cc>Classic Map Moderator</c> or "
+                    "<cr>Classic Map Admin</c> to access this panel on this "
                     "level.";
             }
             FLAlertLayer::create("Incorrect Permission", desc.c_str(), "OK")->show();
@@ -1956,7 +1956,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                 int difficulty = (*cachedJson)["difficulty"].asInt().unwrapOrDefault();
                 if (isSuggested || difficulty == 0) {
                     log::info(
-                        "Level ID {} is not a Rated Layout according to cache (suggested={} difficulty={}); clearing "
+                        "Level ID {} is not a Rated Map according to cache (suggested={} difficulty={}); clearing "
                         "stale cache entry",
                         levelId,
                         isSuggested,

@@ -69,7 +69,7 @@ bool RLModsNotesPopup::init() {
     if (!Popup::init(440.f, 290.f, "GJ_square01.png"))
         return false;
 
-    setTitle("Rated Layouts Moderators Sent Notes");
+    setTitle("Rated Maps Moderators Sent Notes");
     addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupBlue, false);
     m_title->setPositionY(m_title->getPositionY() + 2.f);
 

@@ -169,7 +169,7 @@ void RLNotificationOverlay::callRateNotification(float dt) {
         if (newRate.present) {
             if (newRate.levelId != latestLevelId) {
                 if (self) {
-                    auto alert = RLNotificationAlert::create("New Rated Layout",
+                    auto alert = RLNotificationAlert::create("New Rated Map",
                                                              newRate.levelName,
                                                              newRate.difficulty,
                                                              newRate.featured,
@@ -191,7 +191,7 @@ void RLNotificationOverlay::callRateNotification(float dt) {
         if (newDailyClassic.present) {
             if (newDailyClassic.levelId != latestDailyClassicEventId) {
                 if (self) {
-                    auto alert = RLNotificationAlert::create("New Daily Classic Layout",
+                    auto alert = RLNotificationAlert::create("New Daily Classic Map",
                                                              newDailyClassic.levelName,
                                                              newDailyClassic.difficulty,
                                                              newDailyClassic.featured,
@@ -213,7 +213,7 @@ void RLNotificationOverlay::callRateNotification(float dt) {
         if (newDailyPlatformer.present) {
             if (newDailyPlatformer.levelId != latestDailyPlatformerEventId) {
                 if (self) {
-                    auto alert = RLNotificationAlert::create("New Daily Platformer Layout",
+                    auto alert = RLNotificationAlert::create("New Daily Platformer Map",
                                                              newDailyPlatformer.levelName,
                                                              newDailyPlatformer.difficulty,
                                                              newDailyPlatformer.featured,
@@ -235,7 +235,7 @@ void RLNotificationOverlay::callRateNotification(float dt) {
         if (newWeeklyClassic.present) {
             if (newWeeklyClassic.levelId != latestWeeklyClassicEventId) {
                 if (self) {
-                    auto alert = RLNotificationAlert::create("New Weekly Classic Layout",
+                    auto alert = RLNotificationAlert::create("New Weekly Classic Map",
                                                              newWeeklyClassic.levelName,
                                                              newWeeklyClassic.difficulty,
                                                              newWeeklyClassic.featured,
@@ -257,7 +257,7 @@ void RLNotificationOverlay::callRateNotification(float dt) {
         if (newWeeklyPlatformer.present) {
             if (newWeeklyPlatformer.levelId != latestWeeklyPlatformerEventId) {
                 if (self) {
-                    auto alert = RLNotificationAlert::create("New Weekly Platformer Layout",
+                    auto alert = RLNotificationAlert::create("New Weekly Platformer Map",
                                                              newWeeklyPlatformer.levelName,
                                                              newWeeklyPlatformer.difficulty,
                                                              newWeeklyPlatformer.featured,
@@ -279,7 +279,7 @@ void RLNotificationOverlay::callRateNotification(float dt) {
         if (newMonthlyClassic.present) {
             if (newMonthlyClassic.levelId != latestMonthlyClassicEventId) {
                 if (self) {
-                    auto alert = RLNotificationAlert::create("New Monthly Classic Layout",
+                    auto alert = RLNotificationAlert::create("New Monthly Classic Map",
                                                              newMonthlyClassic.levelName,
                                                              newMonthlyClassic.difficulty,
                                                              newMonthlyClassic.featured,
@@ -301,7 +301,7 @@ void RLNotificationOverlay::callRateNotification(float dt) {
         if (newMonthlyPlatformer.present) {
             if (newMonthlyPlatformer.levelId != latestMonthlyPlatformerEventId) {
                 if (self) {
-                    auto alert = RLNotificationAlert::create("New Monthly Platformer Layout",
+                    auto alert = RLNotificationAlert::create("New Monthly Platformer Map",
                                                              newMonthlyPlatformer.levelName,
                                                              newMonthlyPlatformer.difficulty,
                                                              newMonthlyPlatformer.featured,
@@ -327,7 +327,7 @@ void RLNotificationOverlay::callRateNotification(float dt) {
             if (newEvent.levelId != currentLatestEventId) {
                 if (self) {
                     auto alert = RLNotificationAlert::create(
-                        fmt::format("New {} Layout", newEvent.eventType),
+                        fmt::format("New {} Map", newEvent.eventType),
                         newEvent.levelName,
                         newEvent.difficulty,
                         newEvent.featured,

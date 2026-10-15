@@ -169,7 +169,7 @@ void RLCommunityVotePopup::onSubmit(CCObject*) {
 bool RLCommunityVotePopup::init() {
     if (!Popup::init(420.f, 240.f, "GJ_square02.png"))
         return false;
-    setTitle("Rated Layouts Community Vote");
+    setTitle("Rated Maps Community Vote");
     addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupBlue, false);
     // Use taller vertical rows so label, score and input stack vertically
     float rowW = 100.f;
@@ -282,7 +282,7 @@ bool RLCommunityVotePopup::init() {
     m_mainLayer->addChild(modRow);
 
     auto modLabel =
-        CCLabelBMFont::create("Layout Mods'\nAverage Difficulty", "chatFont.fnt");
+        CCLabelBMFont::create("Map Mods'\nAverage Difficulty", "chatFont.fnt");
     modLabel->setAlignment(kCCTextAlignmentCenter);
     modLabel->setScale(0.8f);
     modRow->addChild(modLabel);
@@ -614,38 +614,38 @@ void RLCommunityVotePopup::refreshFromServer() {
 
 void RLCommunityVotePopup::onInfo(CCObject*) {
     MDPopup::create(
-        "Community Votes & Layout Ratings",
-        "Depending on the community scoring that a layout obtains on any of the three categories, it is very likely to affect an individual layout's rating drastically.\n"
-        "Layout Admins will use these as references to further determine a layout's rating.\n\n"
+        "Community Votes & Map Ratings",
+        "Depending on the community scoring that a map obtains on any of the three categories, it is very likely to affect an individual map's rating drastically.\n"
+        "Map Admins will use these as references to further determine a map's rating.\n\n"
         "\r\n\r\n---\r\n\r\n"
         "## Community Votes Specific Cases\n"
-        "A layout's rating tier can be changed based on these cases around community votes:\n"
+        "A map's rating tier can be changed based on these cases around community votes:\n"
         "### Case 1: Lowering a Rating Tier\n"
         "- If <co>Originality</c> or <cg>Gameplay</c> aspects of the community votes have a score of _**5 or lower** (rounded to zero decimal places/one significant figure)_, the **rating tier will be decreased indefinitely** than its earlier intended rate when still being sent.\n"
         "### Case 2: Increase of a Rating Tier\n"
         "- If <co>Originality</c> or <cg>Gameplay</c> aspects of the community vote have a score of __**9 or higher** (rounded to zero decimal places/one significant figure)__, the **rating tier will potentially be increased** based on staffs and community's general opinions, as long as it still fully adheres to standards.\n"
         "### Case 3: Determining a Difficulty\n"
-        "- The <cr>Difficulty</c> score will be rounded to one or two significant figures and will determine the difficulty tier for a layout. <cy>*(Example: score of 21-24 will determine the layout being a Hard Demon rate, whilist 25-28 is Insane Demon. Similar spreads works on other difficulties)*</c>\n"
+        "- The <cr>Difficulty</c> score will be rounded to one or two significant figures and will determine the difficulty tier for a map. <cy>*(Example: score of 21-24 will determine the map being a Hard Demon rate, whilist 25-28 is Insane Demon. Similar spreads works on other difficulties)*</c>\n"
         "\r\n\r\n---\r\n\r\n"
         "## Community Votes Categories\n\n"
         "All scores are rounded by nearest whole number/integer.\n"
         "### Originality Score\n\n"
-        "<co>Originality Score</c> is used to determine how <cg>distinctive and recognizable</c> the work is done in said layouts, primarily how much the <cy>sync and song representation</c> is done in the gameplay, alongside the <cl>structuring/pattern style</c>. <co>Originality score</c> may be used to affect a rating tier, however standards still apply in the topic of <cy>sync and song representation</c>.\n"
+        "<co>Originality Score</c> is used to determine how <cg>distinctive and recognizable</c> the work is done in said maps, primarily how much the <cy>sync and song representation</c> is done in the gameplay, alongside the <cl>structuring/pattern style</c>. <co>Originality score</c> may be used to affect a rating tier, however standards still apply in the topic of <cy>sync and song representation</c>.\n"
         "### Difficulty Score\n\n"
         "Self explanatory. Ranges from <co>1-30</c> based on <cl>Sparks</c>/<co>Planets</c> difficulty ratings.\n\n"
-        "For Demons, these are how scores determine the difficulty of any layout:\n\n"
+        "For Demons, these are how scores determine the difficulty of any map:\n\n"
         "- **10-14** = Easy Demon\n"
         "- **15-19** = Medium Demon\n"
         "- **20-24** = Hard Demon\n"
         "- **25-28** = Insane Demon\n"
         "- **29-30** = Extreme Demon\n"
         "### Gameplay Score **(most important)**\n\n"
-        "This category determines whether a <cg>layout is enjoyable and engaging to play/buggy</c> or <cr>facing recurring and problematic issues around its playability</c>\n\n"
-        "A score of _**8=>**_ will _potentially increase the layouts rating tier_, however a score of _**<=5**_ will _guarantee a rating tier decrease_. We track reports if a layout has recurring issues and is required to have a rating tier change.\n\n"
+        "This category determines whether a <cg>map is enjoyable and engaging to play/buggy</c> or <cr>facing recurring and problematic issues around its playability</c>\n\n"
+        "A score of _**8=>**_ will _potentially increase the maps rating tier_, however a score of _**<=5**_ will _guarantee a rating tier decrease_. We track reports if a map has recurring issues and is required to have a rating tier change.\n\n"
         "\r\n\r\n---\r\n\r\n"
         "### Extra note\n\n"
-        "It is <cl>**highly recommended**</c> to <cg>beat a layout</c> before submitting a community vote for it for a much more <cy>precise average</c>.\n\n"
-        "**3 or more votes** are <cg>required</c> for community votes to be <cc>accounted into changing a layout's rating</c>.",
+        "It is <cl>**highly recommended**</c> to <cg>beat a map</c> before submitting a community vote for it for a much more <cy>precise average</c>.\n\n"
+        "**3 or more votes** are <cg>required</c> for community votes to be <cc>accounted into changing a map's rating</c>.",
         "OK")
         ->show();
 }

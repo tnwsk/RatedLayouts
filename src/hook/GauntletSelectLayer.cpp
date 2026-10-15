@@ -16,7 +16,7 @@ class $modify(RLHookGauntletSelectLayer, GauntletSelectLayer) {
             auto gauntletBtnSpr = AccountButtonSprite::create(gauntletSpr, AccountBaseColor::Blue, AccountBaseSize::Normal);
             auto gauntletBtn = CCMenuItemSpriteExtra::create(
                 gauntletBtnSpr, this, menu_selector(RLHookGauntletSelectLayer::onGauntletButtonClick));
-            gauntletBtn->setID("rated-layouts-gauntlets-button"_spr);
+            gauntletBtn->setID("rated-maps-gauntlets-button"_spr);
             topRight->addChild(gauntletBtn);
             topRight->updateLayout();
         }
@@ -26,8 +26,8 @@ class $modify(RLHookGauntletSelectLayer, GauntletSelectLayer) {
     void onGauntletButtonClick(CCObject* sender) {
         if (GJAccountManager::sharedState()->m_accountID == 0) {
             FLAlertLayer::create(
-                "Rated Layouts",
-                "You must be <cg>logged in</c> to access this feature in <cl>Rated Layouts.</c>",
+                "Rated Maps",
+                "You must be <cg>logged in</c> to access this feature in <cl>Rated Maps.</c>",
                 "OK")
                 ->show();
             return;
@@ -35,7 +35,7 @@ class $modify(RLHookGauntletSelectLayer, GauntletSelectLayer) {
 
         if (rl::isGDPS()) {
             FLAlertLayer::create(
-                "Rated Layouts",
+                "Rated Maps",
                 "This feature is not available on <cy>GDPS servers.</c>",
                 "OK")
                 ->show();

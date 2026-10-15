@@ -109,7 +109,7 @@ bool RLAchievementsPopup::init() {
     if (!Popup::init(470.f, 290.f, "GJ_square02.png"))
         return false;
 
-    setTitle("Rated Layouts Achievements");
+    setTitle("Rated Maps Achievements");
 
     // TODO: Cache getContentSize()?
     m_tabMenu = CCMenu::create();
@@ -175,7 +175,7 @@ bool RLAchievementsPopup::init() {
 void RLAchievementsPopup::onInfo(CCObject* sender) {
     FLAlertLayer::create(
         "Achievements",
-        "Earn achievements by <cg>completing various tasks</c> in <cl>Rated Layouts</c>!\n"
+        "Earn achievements by <cg>completing various tasks</c> in <cl>Rated Maps</c>!\n"
         "You can view your progress in the <co>Achievements menu</c> and track how close you are to <cb>completing each category.</c>\n",
         "OK")
         ->show();

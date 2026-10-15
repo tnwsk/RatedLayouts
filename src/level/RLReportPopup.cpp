@@ -19,7 +19,7 @@ RLReportPopup* RLReportPopup::create(int levelId) {
 
 bool RLReportPopup::init() {
     if (!Popup::init(440.f, 280.f, "GJ_square02.png")) return false;
-    setTitle("Rated Layouts Report Level");
+    setTitle("Rated Maps Report Level");
     addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupBlue, false);
 
     // report
@@ -157,9 +157,9 @@ void RLReportPopup::onSubmit(CCObject* sender) {
     }
 
     createQuickPopup("Report Level",
-                     "Are you sure you want to report this level?\n<cy>Layout moderators/admins "
+                     "Are you sure you want to report this level?\n<cy>Map moderators/admins "
                      "will review your report and take appropriate action.</c>\n<cr>False reports "
-                     "will lead to your account being blacklisted from reporting layouts.</c>",
+                     "will lead to your account being blacklisted from reporting maps.</c>",
                      "Cancel",
                      "Report",
                      [this](auto, bool yes) {
@@ -285,29 +285,29 @@ void RLReportPopup::onSubmit(CCObject* sender) {
 
 void RLReportPopup::onInfo(CCObject* sender) {
     MDPopup::create(
-        "Reporting Rated Layouts",
-        "Use the toggles to select the reason(s) for <cr>reporting</c> this Rated Layout. You can "
+        "Reporting Rated Maps",
+        "Use the toggles to select the reason(s) for <cr>reporting</c> this Rated Map. You can "
         "select <cg>multiple reasons if applicable</c>.\n\n"
         "To provide additional context, you can provide details in the <cy>'Reasons'</c> input "
         "field.\n\n"
-        "Once you submit the report, <cl>Layout Moderators</c> or <cr>Layout Admins</c> will "
-        "review it and take <cg>appropriate action</c> based on our Rated Layouts guidelines.\n\n"
+        "Once you submit the report, <cl>Map Moderators</c> or <cr>Map Admins</c> will "
+        "review it and take <cg>appropriate action</c> based on our Rated Maps guidelines.\n\n"
         "List of report reasons:\n"
-        "- <cy>**Plagiarism:**</c> The layout is either stolen or directly copied from a decorated "
+        "- <cy>**Plagiarism:**</c> The map is either stolen or directly copied from a decorated "
         "or officially rated level *(e.g., removing the decorations from an existing level and "
         "claiming it as your own)*.\n"
-        "- <cg>**Secret Way:**</c> The layout contains secret ways or 'swag routes' that allow "
+        "- <cg>**Secret Way:**</c> The map contains secret ways or 'swag routes' that allow "
         "players to beat the level without actually playing through the intended path.\n"
-        "- <co>**Low Effort:**</c> The layout shows minimal effort or a lack of creativity "
+        "- <co>**Low Effort:**</c> The map shows minimal effort or a lack of creativity "
         "regarding gameplay.\n"
-        "- <cl>**Unverified:**</c> The layout has not been beaten legitimately or has not been "
+        "- <cl>**Unverified:**</c> The map has not been beaten legitimately or has not been "
         "properly verified.\n"
-        "- <cr>**NSFW Content:**</c> The layout contains NSFW *(explicit/suggestive)*, sensitive "
+        "- <cr>**NSFW Content:**</c> The map contains NSFW *(explicit/suggestive)*, sensitive "
         "*(political/religious/controversial)*, or harassing imagery and text.\n"
         "- <cp>**Misrate:**</c> The level was rated incorrectly, such as having the wrong "
         "difficulty or rating category assigned.\n"
-        "- <cf>**Decorated:**</c> The layout has been heavily or partially decorated to the point "
-        "where it is no longer a 'layout' and could potentially be officially rated in-game.\n"
+        "- <cf>**Decorated:**</c> The map has been heavily or partially decorated to the point "
+        "where it is no longer a 'map' and could potentially be officially rated in-game.\n"
         "- <ca>**Other:**</c> The report reason does not fit into any of the above categories and "
         "requires additional context.",
         "OK")

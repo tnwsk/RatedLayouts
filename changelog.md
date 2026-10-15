@@ -1,3 +1,7 @@
+# v2.1.0
+- layouts are now maps
+- like every single instance of layout
+
 # v2.0.4
 - branding!
 - shop menu loop changed to chilled 1 for fun
@@ -60,7 +64,7 @@
 
 # v1.0.14
 
-#### Heya, It's ArcticWoof! Back again with another banger update for Rated Layouts.
+#### Heya, It's ArcticWoof! Back again with another banger update for Rated Maps.
 
 - Added **Nameplate Submission** directly in-game. This allows the owner to approve new nameplates directly.
   - Check it out at the <cy>Shop Options</c> in the <cr>Ruby Shop</c>!
@@ -75,8 +79,8 @@
 
 # v1.0.13
 
-- Added QoL features for Layout Moderators and Admins in the Sent Layouts
-- Added **In-Game Queue System** for Layout Supporters to submit their layouts directly into an in-game queue system to be reviewed by Layout Moderators and Admins.
+- Added QoL features for Map Moderators and Admins in the Sent Maps
+- Added **In-Game Queue System** for Map Supporters to submit their maps directly into an in-game queue system to be reviewed by Map Moderators and Admins.
 
 # v1.0.12
 
@@ -87,7 +91,7 @@
 # v1.0.11
 
 - Replaced the old glow to use the CCLayerGradient
-- Added Previously Rejected on levels for Layout Mods and Admins
+- Added Previously Rejected on levels for Map Mods and Admins
 - Fixed Newly Rated Notification isn't showing outside the level when **Disable Notification in Level** is enabled
 - Improved the Notification System to separate new events into it's own category (New Daily, Weekly, Monthly etc.)
 - Added Changelog button on the News Announcement Popup
@@ -96,9 +100,9 @@
 
 - Removed unnecessary code that affects only a specific user
 - Gauntlet Levels shows horizontally instead of vertically
-- Added Delete Sends for Layout Admins
-- Added Delete All Sends for Layout Admins
-- Added Rejected Indicator for Layout Admins and Moderators in the Level Info Layer
+- Added Delete Sends for Map Admins
+- Added Delete All Sends for Map Admins
+- Added Rejected Indicator for Map Admins and Moderators in the Level Info Layer
 - Current User on Leaderboard will now show a green glow instead of green text color
 - Added GD Server Status in the RL Menu Layer
 - Added a collapsible mod info in the RL Menu Layer
@@ -110,8 +114,8 @@
 
 - Fixed the issue with the Gauntlet Level Selection background not moving correctly when dragging.
 - Fixed the issue where the third coin is showing the bronze coin texture instead of the blue coin texture.
-- Added **Update Account Info** button in the mod settings to update your account information within Rated Layouts.
-- Added **Disable Rated Layouts Mod Requests** in the mod settings to disable the RL mod requests and use the REQ button normally for Vanilla GD Mods.
+- Added **Update Account Info** button in the mod settings to update your account information within Rated Maps.
+- Added **Disable Rated Maps Mod Requests** in the mod settings to disable the RL mod requests and use the REQ button normally for Vanilla GD Mods.
 - Fixed the issue where the news announcement badge doesn't disappear after viewing the announcement.
 - Fixed the issue where it shows a non-existent achievements.
 - Added popup when clicking the Discord Server button to confirm before joining
@@ -132,20 +136,20 @@
 - Remove Top Creator toggler.
 - Fixed the cache clearing not working correctly when the server returns non-ok status.
 - Fixed the Rubies position offset incorrectly when fetching a level that is cached.
-- Tweaked the **Event Layouts** animation to be similar to Vanilla Daily Level animation.
-- Improved the **News Annoucements** to include past announcements and a better layout.
+- Tweaked the **Event Maps** animation to be similar to Vanilla Daily Level animation.
+- Improved the **News Annoucements** to include past announcements and a better map.
 
 ## v1.0.6
 
 - Added Caching on Levels and Comments, this reduces the amount of server requests and improves performance.
 - Changed the Community Votes requirements to the following:
-  - <cr>Demon Layouts</c>: 20% Normal Mode and 80% Practice Mode
-  - <cg>Non-Demon Layouts</cg>: 50% Normal Mode and 100% Practice Mode
-  - <co>Platformer Layouts</co>: Must have completed the level (regardless of the completion percentage)
+  - <cr>Demon Maps</c>: 20% Normal Mode and 80% Practice Mode
+  - <cg>Non-Demon Maps</cg>: 50% Normal Mode and 100% Practice Mode
+  - <co>Platformer Maps</co>: Must have completed the level (regardless of the completion percentage)
 - Fixed Typos... again
 - Fixed crash when entering The Spire after completing a level
 - Added new Gauntlet Sprite
-- The Blue Spark Button on the Vanilla Search Layer will now go directly to the Rated Layouts Search Layer
+- The Blue Spark Button on the Vanilla Search Layer will now go directly to the Rated Maps Search Layer
 - Updated Mod About Page
 - Removed **Vigilant Citizen** achievement.
 - Added back **Get Gem To Win Experience** achievement.
@@ -153,7 +157,7 @@
 ## v1.0.5
 
 - Removed **Legacy Rate** feature entirely.
-- Added GDPS check, it will give a warning when trying to access Rated Layouts features on GDPS.
+- Added GDPS check, it will give a warning when trying to access Rated Maps features on GDPS.
 - Added a toggle for "Top Creators" in the leaderboard layer to show creators who interacted with the mod
 - Fixed more typos
 - Fixed a small bug with the leaderboard tab not deselecting properly
@@ -162,13 +166,13 @@
 ## v1.0.4
 
 - Updated the about mod page
-- Fixed issue where **Laying Out!** achievement isn't unlocking after completing a rated layout.
+- Fixed issue where **Laying Out!** achievement isn't unlocking after completing a rated map.
 - Fixed issue where user with **Disabled Reward Animation** enabled still getting the reward notification even when it's already completed.
 - Fixed the Author's name in the Shop Item list not showing. _(Due to the backend changes)_
 - Fixed issue where Spire levels not updating after completing a Spire level.
 - Fixed typos in the information texts
 - Notification are off on levels by default. _(You can enable it in the mod settings)_
-- Added **Rated Layouts Menu Button** in the Main Menu. _(Can be disabled in the mod settings)_
+- Added **Rated Maps Menu Button** in the Main Menu. _(Can be disabled in the mod settings)_
 - Added **Guidebook** as a replacement to the info button in the main menu. _(It will ask you when opening the layer first)_
 - Added **Key** button, mainly used for internal uses.
 - Moved the **Votes Leaderboard** to the main Leaderboard Tabs.
@@ -178,9 +182,9 @@
 
 - Reverted April Fools related changes
   - Removed **Get Gem to Win** achievement
-- Removed **Layout Report System** button on non-rated layouts.
+- Removed **Map Report System** button on non-rated maps.
 - Fixed and Tweaked the Achievement Icons scaled incorrectly in the Achievements Popup.
-- Fixed issue where Layout Gauntlets levels showing as incompleted even when its been completed already.
+- Fixed issue where Map Gauntlets levels showing as incompleted even when its been completed already.
 
 ## v1.0.2-goog
 
@@ -195,7 +199,7 @@
 
 ### The Spire Update!
 
-- Added **The Spire**. Platformer-focus user created Rated Layouts levels. Explore the Spire and find forsaken lore beyond the <cp>Cosmos</c>
+- Added **The Spire**. Platformer-focus user created Rated Maps levels. Explore the Spire and find forsaken lore beyond the <cp>Cosmos</c>
 - Added **New Secret Character**. _Discover this character and your access to the Spire will be granted_
 - Added **Disable Notification in Level** in the mod settings
 - Added **Comment Text Background** for better visibility of comments on bright nameplates
@@ -212,12 +216,12 @@
 - Fixed issue where the comment text color isn't applied for users with [Comment Emojis Reloaded](mod:prevter.comment_emojis) mod enabled
 - Fixed issue where Difficulty Score voted 10 or higher doesn't apply correctly when voted
 - Fixed issue with the nameplate item hitbox area has been set incorrectly
-- Stats Info Button at the Profile Page will now show their Rated Layouts stats when the stats menu is toggled to Rated Layouts stats
+- Stats Info Button at the Profile Page will now show their Rated Maps stats when the stats menu is toggled to Rated Maps stats
 - Updated the **Community Votes** information
 - Improved the UI especially for the User Level Panel and the Moderator/Admin Panel
 - Replaced the Buttons into a Dropdown Menu in the Shop Layer
 - Moderator Note are now clickable and will show a Popup with the full note text
-- Layout Admins can now promote/demote Layout Moderators
+- Map Admins can now promote/demote Map Moderators
 - Internal Code Refactor and optimizations
 
 ## v0.4.3-beta.1
@@ -228,7 +232,7 @@
 - Added **Vote Count** in the Profile Page.
 - Replaced the **Ruby Shopkeeper** with a new character hehehe
 - Added **Coin Unverified** filter in the Custom Search Layer to show levels that has unverified/no coins.
-- Added **Report Level** on sent layouts levels.
+- Added **Report Level** on sent maps levels.
 - Added **Disable Comment Glow on Nameplate** option in the mod settings. _(Enabled by Default)_
 - Added **Appeal Button** for users who got leaderboard banned. (Found in the Difficulty Stats popup)
 - Improved the **Credits Popup**
@@ -240,17 +244,17 @@
 ## v0.4.2-beta.1
 
 - Refactored the Moderation system and introducing **Role Specific Badges**! Moderators and Admins will now have different badges to distinguish them in the comments and the leaderboard.
-  - **Platformer Layout Moderator** badge for moderators who can suggest platformer rated layouts.
-  - **Classic Layout Moderator** badge for moderators who can suggest classic rated layouts.
-  - **Platformer Layout Admin** badge for admins who can suggest/rate platformer rated layouts.
-  - **Classic Layout Admin** badge for admins who can suggest/rate classic rated layouts.
-  - **Leaderboard Layout Moderator** badge for moderators who can moderate the leaderboard.
+  - **Platformer Map Moderator** badge for moderators who can suggest platformer rated maps.
+  - **Classic Map Moderator** badge for moderators who can suggest classic rated maps.
+  - **Platformer Map Admin** badge for admins who can suggest/rate platformer rated maps.
+  - **Classic Map Admin** badge for admins who can suggest/rate classic rated maps.
+  - **Leaderboard Map Moderator** badge for moderators who can moderate the leaderboard.
 - Added **Badge API** back as a dependency
-- Added **Most Sents and Least Sents** for Admins and Mods in the Sent Layouts section.
-- Added **Classic & Platformer** filters on the Sent Layouts section.
+- Added **Most Sents and Least Sents** for Admins and Mods in the Sent Maps section.
+- Added **Classic & Platformer** filters on the Sent Maps section.
 - Added More **Nameplates**
-- Added seperate timer for the **Event Layouts**
-- Added Additional tools for **Leaderboard Layout Mods**
+- Added seperate timer for the **Event Maps**
+- Added Additional tools for **Leaderboard Map Mods**
 - Fixed issue where rubies isn't rewarded correctly at the End Level Layer.
 - Fixed issue where the **Disable Reward Animation** option isn't applying on rubies collection.
 - Fixed issue with the Menu Buttons in the **Profile Page** got cut off.
@@ -267,25 +271,25 @@
 - Ported to Geode v5.0.0
 - Improved **Level Browser**! Now you can search more than **100 levels**!
 - New **Gauntlet Sprites**!
-- Added **Legendary Rated Layouts**. Layouts that are rated Legendary will have a special title animation and particle effects.
-- Added **Epic Layouts Particles** making epic layouts more standout.
-- Added **Customizable Background** in the Rated Layouts Creator Layer and Leaderboard Layer. _(Can be changed in the mod settings)_
-- Added **Rated Layout Browser** button!
+- Added **Legendary Rated Maps**. Maps that are rated Legendary will have a special title animation and particle effects.
+- Added **Epic Maps Particles** making epic maps more standout.
+- Added **Customizable Background** in the Rated Maps Creator Layer and Leaderboard Layer. _(Can be changed in the mod settings)_
+- Added **Rated Map Browser** button!
 - Added **Coins Verified** status for levels that has verified Blue Coins.
 - Added **Completed**, **Uncompleted** and **Coins Verified** filters in the Custom Search Layer.
 - Added **Coin Rank** in the Difficulty Stats Popup.
 - Added **Custom Achievements**! Collect achievements by completing certain milestones and special interactions.
-- Added **Random Level** button in the Custom Search Layer to play a random rated layout level!
+- Added **Random Level** button in the Custom Search Layer to play a random rated map level!
 - Added **Total Demon Count** in the Difficulty Stats Popup.
-- Added **Layout Booster Badge** for users who has boosted the Rated Layouts Discord server.
+- Added **Map Booster Badge** for users who has boosted the Rated Maps Discord server.
 - Added **Newly Rated/Event Notifications**
-- Added **Featured Score** label in the level cells for featured rated layouts.
-- Added **Ruby Collectables** for playing Rated Layouts. (Thanks to [Darkore](user:3595559) for the Ruby texture design!)
+- Added **Featured Score** label in the level cells for featured rated maps.
+- Added **Ruby Collectables** for playing Rated Maps. (Thanks to [Darkore](user:3595559) for the Ruby texture design!)
 - Fixed the Leaderboard and added refresh button to manually refresh the leaderboard data.
-- Tweak the **Event Layouts** with the new sprite title and improved the UI.
+- Tweak the **Event Maps** with the new sprite title and improved the UI.
 - Added working animated **Blue Coins Sprites** in the levels
 - Added Indicators for Top 3 players in the Leaderboard Layer.
-- Layout that is Rated by RobTop will automatically gets unrated.
+- Map that is Rated by RobTop will automatically gets unrated.
 - Change the sprites to be in a spritesheet.
 - Clean-up the Mod Rate Popup code/UI.
 - Proper error message handling
@@ -296,38 +300,38 @@
 
 ## v0.3.6-beta.1
 
-- **Added Blue Coins!** Thanks to [Darkore](user:3595559) for the Blue Coin texture design! You can now collect Blue Coins by collecting them in the Rated Layouts levels.
+- **Added Blue Coins!** Thanks to [Darkore](user:3595559) for the Blue Coin texture design! You can now collect Blue Coins by collecting them in the Rated Maps levels.
 - **NEW Featured and Epic Texture** Replaced the old texture to a new and clearer design. _Thanks to myself for the new design!!!!!_
 
-_(Be sure to re-enter your previously beaten levels to collect Blue Coins if you have played Rated Layouts before this update!)_
+_(Be sure to re-enter your previously beaten levels to collect Blue Coins if you have played Rated Maps before this update!)_
 
-- Fixed issue where liking/refreshing level in level info will set the difficulty sprite incorrectly especially on any levels that isn't rated layouts.
+- Fixed issue where liking/refreshing level in level info will set the difficulty sprite incorrectly especially on any levels that isn't rated maps.
 - Fully patched/fixed the web request crashes.
 
 ## v0.3.5-beta.1
 
-- **Profile Stats Changed!** The Rated layouts stats are now on a separate section in the profile page. Click the new Planet Button in the profile page to view your Rated Layouts stats!
-- **Added Gauntlet Select Levels!** You can now select and play Layout Gauntlet levels from the Gauntlet Select Layer.
-- **Added Report Rated Layouts!** You can now report Rated Layouts that violates the Rated Layouts guidelines directly from the Level Info Layer.
+- **Profile Stats Changed!** The Rated maps stats are now on a separate section in the profile page. Click the new Planet Button in the profile page to view your Rated Maps stats!
+- **Added Gauntlet Select Levels!** You can now select and play Map Gauntlet levels from the Gauntlet Select Layer.
+- **Added Report Rated Maps!** You can now report Rated Maps that violates the Rated Maps guidelines directly from the Level Info Layer.
 - **New Mod Title!** Thanks to [KrazyGFX](https://x.com/Krazy_GFX/status/2006175258361905195?s=20) for the design
 - Changed "Design" to "Originality" in the Community Vote popup.
 - Added Confirmation popup when submitting a vote in the Community Vote popup.
-- Added Layout Gauntlet Button on the Vanilla Gauntlet Select Layer to easily access the Rated Layout Gauntlets.
-- Added "Suggest" button for Layout Admins
-- Improved the Layout Moderators and Admins UI.
+- Added Map Gauntlet Button on the Vanilla Gauntlet Select Layer to easily access the Rated Map Gauntlets.
+- Added "Suggest" button for Map Admins
+- Improved the Map Moderators and Admins UI.
 - Comment Glow will now apply when an user has planets in their stats.
-- Layout Admins can now view 3+ sends in the Sent Layouts section.
-- Layout Moderators and Admins can now reject suggested layouts.
-- Layout Mods can now see the total sends in the Mod Rate Popup.
+- Map Admins can now view 3+ sends in the Sent Maps section.
+- Map Moderators and Admins can now reject suggested maps.
+- Map Mods can now see the total sends in the Mod Rate Popup.
 - Community Vote button is now shown at the right side of the menu in the Level Info Layer.
-- Community Vote will now always show on Rated layouts instead of just suggested layouts.
-- Event Layouts are now more responsive when pressing the play button
+- Community Vote will now always show on Rated maps instead of just suggested maps.
+- Event Maps are now more responsive when pressing the play button
 - Fixed issue where submitting a vote with no score defaulted to 1. It should not be included in the vote if empty.
 - Fixed issue where the Leaderboard tabs are misaligned on smaller screens.
 - Fixed issue where the Leaderboard tabs are transparent when selected.
 - Fixed issue where the game crashes when the web requests finishes but the layer is already destroyed.
-- Fixed issue when refreshing or liking a rated layout level, the difficulty sprites in the profile page isn't updated correctly.
-- Fixed issue where the time completion for platformer rated layouts isn't showing the correct time.
+- Fixed issue when refreshing or liking a rated map level, the difficulty sprites in the profile page isn't updated correctly.
+- Fixed issue where the time completion for platformer rated maps isn't showing the correct time.
 
 _Thanks to [delivel-tech](https://github.com/delivel-tech) & [iAndyHD3](https://github.com/iAndyHD3) for this update and fixes!_
 
@@ -342,16 +346,16 @@ _Thanks to [delivel-tech](https://github.com/delivel-tech) & [iAndyHD3](https://
 
 ## v0.3.3-beta.1
 
-- **Added Layout Supporter Badge!** Support Rated Layouts development by donating via Ko-fi and get a special badge shown to all players and a colored comment!
-- You can view the total votes count for each suggested levels in the Sent Layouts levels.
+- **Added Map Supporter Badge!** Support Rated Maps development by donating via Ko-fi and get a special badge shown to all players and a colored comment!
+- You can view the total votes count for each suggested levels in the Sent Maps levels.
 - Scores in the Community Vote popup are now more precises.
-- Layout Moderators and Admins can now toggle the scores in the Community Vote popup even if they haven't voted yet.
-- Added **Layout Supporters** users in the credits list.
+- Map Moderators and Admins can now toggle the scores in the Community Vote popup even if they haven't voted yet.
+- Added **Map Supporters** users in the credits list.
 - Minor fixes and improvements.
 
 ## v0.3.2-beta.1
 
-- Removed [More Difficulties](mod:uproxide.more_difficulties) from the incompatible mods, but the more difficulties sprite won't be shown for layouts that is rated.
+- Removed [More Difficulties](mod:uproxide.more_difficulties) from the incompatible mods, but the more difficulties sprite won't be shown for maps that is rated.
 - Added "Clear Cached Data" button in the mod settings to clear all cached rating and profile data.
 - Fixed issue where the sprites on the reward animation is showing the incorrect texture.
 - Fixed issue where the stars/planets reward animation crashes upon completing a level.
@@ -363,8 +367,8 @@ _Thanks to [hiimjasmine00](https://github.com/hiimjasmine00) for the fixes!_
 
 ## v0.3.1-beta.1
 
-- **Added "Classic" Filter** in the Custom Search to filter Classic Rated Layout Levels.
-- **Added Announcement Button** in the Rated Layouts Creator Layer to view the latest news and updates about Rated Layouts.
+- **Added "Classic" Filter** in the Custom Search to filter Classic Rated Map Levels.
+- **Added Announcement Button** in the Rated Maps Creator Layer to view the latest news and updates about Rated Maps.
 - Added Planets Collectable count in the Garage Layer.
 - Epic, Featured and Awarded filters are no longer mutually exclusive, you can now select multiple of them at once.
 
@@ -372,31 +376,31 @@ _Thanks to [hiimjasmine00](https://github.com/hiimjasmine00) for the fixes!_
 
 ### The Planets Platformer Update!
 
-- **Added Planets Collectables!** Collect Planets by completing Platformer Rated Layout Levels. Thanks to [Darkore](user:3595559) for the Planet texture design!
-- **Added Platformer Rated Layout Levels!** You can now play Platformer Rated Layout Levels and earn Planets Collectables!
-- **Added Platformer Rated Layouts Filter!** You can now filter levels by Platformer Rated Layouts in the Custom Search.
-- **Added Platformer Difficulty Stats!** You can now view your Platformer Rated Layout Levels stats in your profile page, including the number of levels you've beaten for each platformer difficulty. (You can view them by clicking the Planets icon in the profile page.)
-- **Added Username Filter!** You can now filter layout levels by creator's username in the Custom Search.
-- **Added Platformer Layouts into the Event Layouts!** You can now find Platformer Rated Layout Levels in the Event Layouts section.
-- Made Blueprint Points clickable in the Profile Page to view the account's rated layout levels.
-- Layout Moderators and Admins can now suggest/rate platformer layout levels.
+- **Added Planets Collectables!** Collect Planets by completing Platformer Rated Map Levels. Thanks to [Darkore](user:3595559) for the Planet texture design!
+- **Added Platformer Rated Map Levels!** You can now play Platformer Rated Map Levels and earn Planets Collectables!
+- **Added Platformer Rated Maps Filter!** You can now filter levels by Platformer Rated Maps in the Custom Search.
+- **Added Platformer Difficulty Stats!** You can now view your Platformer Rated Map Levels stats in your profile page, including the number of levels you've beaten for each platformer difficulty. (You can view them by clicking the Planets icon in the profile page.)
+- **Added Username Filter!** You can now filter map levels by creator's username in the Custom Search.
+- **Added Platformer Maps into the Event Maps!** You can now find Platformer Rated Map Levels in the Event Maps section.
+- Made Blueprint Points clickable in the Profile Page to view the account's rated map levels.
+- Map Moderators and Admins can now suggest/rate platformer map levels.
 - Internal Moderator and Admin UI tweaks.
 - Added additional checks on the "anti-cheat" for beating levels.
-- Fixed issue with the labels in the Event Layouts layer being misaligned.
+- Fixed issue with the labels in the Event Maps layer being misaligned.
 - Fixed issue where spamming the buttons makes the popup appear multiple times.
 
 ## v0.2.9-beta.1
 
-- Tweaked the **Community Vote** UI. If you are a Layout Moderator or Admin, it's unlocked by default. Others has to meet the percentage requirements to access it.
+- Tweaked the **Community Vote** UI. If you are a Map Moderator or Admin, it's unlocked by default. Others has to meet the percentage requirements to access it.
 - Community vote scores are now hidden until the user has voted, this ensure that users are not biased by the current votes.
-- Added **Discord Invite Button** in the Rated Layouts Main Layer to easily join the Rated Layouts Discord server.
+- Added **Discord Invite Button** in the Rated Maps Main Layer to easily join the Rated Maps Discord server.
 - Added **Global Rank** on the Difficulty Stats popup to show your global rank based on the number of stars you've collected.
 - **Secret Dialogue messages are now dynamic**. You might get different messages each time you click it!
-- **Layout Moderators and Admins** can now submit custom dialogue messages for users to see when they click the secret dialogue button.
+- **Map Moderators and Admins** can now submit custom dialogue messages for users to see when they click the secret dialogue button.
 
 ## v0.2.8-beta.1
 
-- **Added Layout Gauntlets Annoucement!** Be sure to check out the Layout Gauntlets Creator Contest!!
+- **Added Map Gauntlets Annoucement!** Be sure to check out the Map Gauntlets Creator Contest!!
 - Fixed issue where [Badge API](mod:jouca.badgesapi) was set to the wrong recommended version
 - Removed [Demons In Between](mod:hiimjustin000.demons_in_between) from the incompatible mods as it doesn't conflict at all.
 
@@ -404,53 +408,53 @@ _Thanks to [hiimjasmine00](https://github.com/hiimjasmine00) for the fixes!_
 
 ## v0.2.7-beta.1
 
-- **New Texture Update!** Huge thanks to [Dasshu](user:1975253) for creating new textures and logo for Rated Layouts mod and [Darkore](user:3595559) for the new stars icon mockup!
-- Removed "Newly Rated" button. _You can still find newly rated layouts in the Custom Search layer by simply clicking the search button without any filters applied._
-- Seperated the Event Layouts into Daily, Weekly, and Monthly Layouts.
-- **Added Layout Gauntlets!** A special themed layout gauntlets curated by Rated Layouts Admins and Moderators. Used to host special layout creator contests.
-- **Added Community Vote!** Rated Layouts community can now vote on suggested layouts in the Sent Layouts section. This helps better curate layouts for the Layout Admins.
-- **Added Safe Event Layouts!** You can view past event layouts by clicking the Safe button in the Event Layouts layer.
+- **New Texture Update!** Huge thanks to [Dasshu](user:1975253) for creating new textures and logo for Rated Maps mod and [Darkore](user:3595559) for the new stars icon mockup!
+- Removed "Newly Rated" button. _You can still find newly rated maps in the Custom Search layer by simply clicking the search button without any filters applied._
+- Seperated the Event Maps into Daily, Weekly, and Monthly Maps.
+- **Added Map Gauntlets!** A special themed map gauntlets curated by Rated Maps Admins and Moderators. Used to host special map creator contests.
+- **Added Community Vote!** Rated Maps community can now vote on suggested maps in the Sent Maps section. This helps better curate maps for the Map Admins.
+- **Added Safe Event Maps!** You can view past event maps by clicking the Safe button in the Event Maps layer.
 - Added the following mod incompatibilities to prevent conflicts with the difficulty sprite:
   - [More Difficulties](mod:uproxide.more_difficulties)
   - [Demons In Between](mod:hiimjustin000.demons_in_between)
-- Added Epic Layout Suggest for Layout Moderators.
+- Added Epic Map Suggest for Map Moderators.
 - Improved "anti-cheat" for beating levels.
 - Fixed issue where users cache isn't always up to date when showing stats in the comments.
 - Fixed issue when liking/unliking levels, the stars count in the level info layer isn't updated correctly.
-- Tweaked the glow effect and the Layout Moderators and Admins' comment colors to be less intense.
+- Tweaked the glow effect and the Map Moderators and Admins' comment colors to be less intense.
 
 ## v0.2.6-beta.1
 
-- Fixed bug where Layout Admins can't submit featured score for Epic Layouts.
+- Fixed bug where Map Admins can't submit featured score for Epic Maps.
 - Fixed bug where comments text color on non-compact mode was not applied correctly.
 - Fixed issue where Blueprint Stars isn't showing the correct amount at the Garage Layer.
 - Fixed issue where users who has [Comment Emojis Reloaded](mod:prevter.comment_emojis) mod installed can't see Mods/Admins colored comments.
 - Fixed issue where the Blueprint Stars label is overflowing outside the container in the Profile Page. (Looks nice for those who has 1000+ stars now!)
 - Added Stars value formatting. _(Now it shows 1,234 instead of 1234)_
-- Added Rated Layout Button at the Level Search Layer.
+- Added Rated Map Button at the Level Search Layer.
 
 ## v0.2.5-beta.1
 
-- Minor fixes and code cleanup on Event Layouts.
+- Minor fixes and code cleanup on Event Maps.
 
 ## v0.2.4-beta.1
 
-- Fixed issue with the event layouts loading the level incorrectly.
+- Fixed issue with the event maps loading the level incorrectly.
 - Fixed issue with the Search Background Menu not displaying correctly.
 
 ## v0.2.3-beta.1
 
 - **Added Difficulty Stats!** You can view your difficulty stats in your profile page, including the number of levels you've beaten for each difficulty. (You can view them by clicking the Blueprint Stars icon in the profile page.)
-- **Added User Comment Glow!** You can easily identify comments from users using Rated Layouts mod.
-- **Added Event Layouts!** Play daily, weekly, and monthly rated layouts curated by the Rated Layouts team and Admins.
+- **Added User Comment Glow!** You can easily identify comments from users using Rated Maps mod.
+- **Added Event Maps!** Play daily, weekly, and monthly rated maps curated by the Rated Maps team and Admins.
 - **Added Epic Rating!** Levels can now be rated as Epic by Admins, giving them a special status and recognition.
 - **Added Epic Search Filter!** You can now filter levels by Epic rating in the Custom Search.
 - Tweaks for Search Layer.
 
 ## v0.2.2-beta.1
 
-- **Added Custom Search!** You can now search for Rated Layout Levels using various filters such as <cr>difficulty</c>, <co>level type</co> and more!
-- Removed the Level Search Quick Menu from the Search Tab in favor of the custom search layer in the Rated Layouts Creator Layer.
+- **Added Custom Search!** You can now search for Rated Map Levels using various filters such as <cr>difficulty</c>, <co>level type</co> and more!
+- Removed the Level Search Quick Menu from the Search Tab in favor of the custom search layer in the Rated Maps Creator Layer.
 - Fixed the sprite not showing the correct star icon in the end level layer when claiming stars.
 
 ## v0.2.1-beta.1
@@ -472,7 +476,7 @@ _Thanks to [hiimjasmine00](https://github.com/hiimjasmine00) for the fixes!_
 ## v0.1.8-beta.1
 
 - Added User logs and control panel (for moderators and admins)
-- Added credits or layout moderators and admins list
+- Added credits or map moderators and admins list
 - Added an settings to disable moving background
 - Added Disable Reward Animation (useful if you on mobile and it kept crashing)
 - Removed the background decoration because it kept lagging the game
@@ -480,13 +484,13 @@ _Thanks to [hiimjasmine00](https://github.com/hiimjasmine00) for the fixes!_
 
 ## v0.1.7-beta.1
 
-- Added Info Button at the Rated Layouts Creator Layer that explains about Rated Layouts and its features.
+- Added Info Button at the Rated Maps Creator Layer that explains about Rated Maps and its features.
 - My sanity is in a dialog form now...
 - Minor fixes and improvements.
 
 ## v0.1.6-beta.1
 
-- Added a custom layer for all Rated Layouts related features. (found at the bottom left of the creator layer)
+- Added a custom layer for all Rated Maps related features. (found at the bottom left of the creator layer)
 - Sprite changes to make sure its consistent with the theme.
 
 ## v0.1.5-beta.1
@@ -496,7 +500,7 @@ _Thanks to [hiimjasmine00](https://github.com/hiimjasmine00) for the fixes!_
 
 ## v0.1.4-beta.1
 
-- Added Leaderboard! You can now view the top players based on the number of stars and creator points they have collected from rated layouts.
+- Added Leaderboard! You can now view the top players based on the number of stars and creator points they have collected from rated maps.
 
 ## v0.1.3-beta.1
 

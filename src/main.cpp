@@ -66,7 +66,7 @@ $on_mod(Loaded) {
 
     // disable rl req if is a gdps
     if (rl::isGDPS()) {
-        log::debug("Running on GDPS, disabling Rated Layouts requests");
+        log::debug("Running on GDPS, disabling Rated Maps requests");
         Mod::get()->setSettingValue<bool>("disableRLReq", true);
         CachedSettings::get()->disableRLReq = true;
     }
@@ -318,25 +318,25 @@ class $modify(RLSupportLayer, SupportLayer) {
 
             if (roleCount > 1) {
                 log::info("Granted Multiple roles");
-                popupRef->showSuccessMessage("Granted Layout roles.");
+                popupRef->showSuccessMessage("Granted Map roles.");
             } else if (info.isClassicMod) {
-                log::info("Granted Layout Mod role");
-                popupRef->showSuccessMessage("Granted Classic Layout Mod.");
+                log::info("Granted Map Mod role");
+                popupRef->showSuccessMessage("Granted Classic Map Mod.");
             } else if (info.isClassicAdmin) {
-                log::info("Granted Layout Admin role");
-                popupRef->showSuccessMessage("Granted Classic Layout Admin.");
+                log::info("Granted Map Admin role");
+                popupRef->showSuccessMessage("Granted Classic Map Admin.");
             } else if (info.isLeaderboardMod) {
-                log::info("Granted Leaderboard Layout Mod role");
-                popupRef->showSuccessMessage("Granted Leaderboard Layout Mod.");
+                log::info("Granted Leaderboard Map Mod role");
+                popupRef->showSuccessMessage("Granted Leaderboard Map Mod.");
             } else if (info.isLeaderboardAdmin) {
-                log::info("Granted Leaderboard Layout Admin role");
-                popupRef->showSuccessMessage("Granted Leaderboard Layout Admin.");
+                log::info("Granted Leaderboard Map Admin role");
+                popupRef->showSuccessMessage("Granted Leaderboard Map Admin.");
             } else if (info.isPlatMod) {
-                log::info("Granted Platformer Layout Mod role");
-                popupRef->showSuccessMessage("Granted Platformer Layout Mod.");
+                log::info("Granted Platformer Map Mod role");
+                popupRef->showSuccessMessage("Granted Platformer Map Mod.");
             } else if (info.isPlatAdmin) {
                 log::info("Granted Platformer Admin role");
-                popupRef->showSuccessMessage("Granted Platformer Layout Admin.");
+                popupRef->showSuccessMessage("Granted Platformer Map Admin.");
             } else if (info.isOwner) {
                 log::info("Granted Owner role");
                 popupRef->showSuccessMessage("Granted Owner role.");

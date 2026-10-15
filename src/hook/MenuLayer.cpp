@@ -21,16 +21,16 @@ class $modify(RLHookMenuLayer, MenuLayer) {
             auto rlButtonSpr = CrossButtonSprite::create(sparkTop, CrossBaseColor::Green, CrossBaseSize::Small);
             auto rlButton = CCMenuItemSpriteExtra::create(
                 rlButtonSpr, this, menu_selector(RLHookMenuLayer::onRatedLayoutLayer));
-            rlButton->setID("rated-layouts-button"_spr);
+            rlButton->setID("rated-maps-button"_spr);
             mainMenu->addChild(rlButton);
             mainMenu->updateLayout();
         }
 
         if (rl::isGDPS()) {
             FLAlertLayer::create(
-                "Alert from Rated Layouts",
-                "<cl>Rated Layouts</c> does <cr>not work</c> on <co>GDPS.</c>\n"
-                "<cy>Please disable Rated Layouts when playing on a GDPS.</c>",
+                "Alert from Rated Maps",
+                "<cl>Rated Maps</c> does <cr>not work</c> on <co>GDPS.</c>\n"
+                "<cy>Please disable Rated Maps when playing on a GDPS.</c>",
                 "OK")
                 ->show();
         }
@@ -41,8 +41,8 @@ class $modify(RLHookMenuLayer, MenuLayer) {
     void onRatedLayoutLayer(CCObject* sender) {
         if (GJAccountManager::sharedState()->m_accountID <= 0) {
             FLAlertLayer::create(
-                "Rated Layouts",
-                "You must be <cg>logged in</c> to access this feature in <cl>Rated Layouts.</c>",
+                "Rated Maps",
+                "You must be <cg>logged in</c> to access this feature in <cl>Rated Maps.</c>",
                 "OK")
                 ->show();
             return;
@@ -50,7 +50,7 @@ class $modify(RLHookMenuLayer, MenuLayer) {
 
         if (rl::isGDPS()) {
             FLAlertLayer::create(
-                "Rated Layouts",
+                "Rated Maps",
                 "This feature is not available on <cy>GDPS servers.</c>",
                 "OK")
                 ->show();

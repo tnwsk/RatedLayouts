@@ -57,8 +57,8 @@ static constexpr Achievement s_coinAchievements[] {
     {"coin_500", "High as the Blue Sky", "Collected 500 Blue Coins", Collectable::Coins, 500, "RL_BlueCoinUI.png"_spr}
 };
 static constexpr Achievement s_blueprintAchievements[] {
-    {"points_1", "I forgot how to deco.", "Get a Rated Layout", Collectable::Points, 1, "RL_blueprintPoint01.png"_spr},
-    {"points_5", "Layouter ", "Collected 5 Blueprint Points", Collectable::Points, 5, "RL_blueprintPoint01.png"_spr},
+    {"points_1", "I forgot how to deco.", "Get a Rated Map", Collectable::Points, 1, "RL_blueprintPoint01.png"_spr},
+    {"points_5", "Maper ", "Collected 5 Blueprint Points", Collectable::Points, 5, "RL_blueprintPoint01.png"_spr},
     {"points_10", "Certified GLC", "Collected 10 Blueprint Points", Collectable::Points, 10, "RL_blueprintPoint01.png"_spr},
     {"points_25", "Visuals are 0%", "Collected 25 Blueprint Points", Collectable::Points, 25, "RL_blueprintPoint01.png"_spr},
     {"points_50", "Reached Flow-state", "Collected 50 Blueprint Points", Collectable::Points, 50, "RL_blueprintPoint01.png"_spr},
@@ -66,34 +66,34 @@ static constexpr Achievement s_blueprintAchievements[] {
     {"points_100", "Noob turned Pro", "Collected 100 Blueprint Points", Collectable::Points, 100, "RL_blueprintPoint01.png"_spr}
 };
 static constexpr Achievement s_voteAchievements[] {
-    {"vote_1", "Civic Layout Duty", "Submit your first vote on a Layout", Collectable::Votes, 1, "RL_commVote01.png"_spr},
-    {"vote_10", "Democracy in Layouts", "Submit 10 votes on Layouts", Collectable::Votes, 10, "RL_commVote01.png"_spr},
-    {"vote_50", "Layout Pollster", "Submit 50 votes on Layouts", Collectable::Votes, 50, "RL_commVote01.png"_spr},
-    {"vote_100", "Holding an Election", "Submit 100 votes on Layouts", Collectable::Votes, 100, "RL_commVote01.png"_spr},
-    {"vote_250", "Helping out the Poor", "Submit 250 votes on Layouts", Collectable::Votes, 250, "RL_commVote01.png"_spr},
-    {"vote_500", "You should be a Mod!", "Submit 500 votes on Layouts", Collectable::Votes, 500, "RL_commVote01.png"_spr},
-    {"vote_1000", "Can I NOW rate layouts?", "Submit 1000 votes on Layouts", Collectable::Votes, 1000, "RL_commVote01.png"_spr}
+    {"vote_1", "Civic Map Duty", "Submit your first vote on a Map", Collectable::Votes, 1, "RL_commVote01.png"_spr},
+    {"vote_10", "Democracy in Maps", "Submit 10 votes on Maps", Collectable::Votes, 10, "RL_commVote01.png"_spr},
+    {"vote_50", "Map Pollster", "Submit 50 votes on Maps", Collectable::Votes, 50, "RL_commVote01.png"_spr},
+    {"vote_100", "Holding an Election", "Submit 100 votes on Maps", Collectable::Votes, 100, "RL_commVote01.png"_spr},
+    {"vote_250", "Helping out the Poor", "Submit 250 votes on Maps", Collectable::Votes, 250, "RL_commVote01.png"_spr},
+    {"vote_500", "You should be a Mod!", "Submit 500 votes on Maps", Collectable::Votes, 500, "RL_commVote01.png"_spr},
+    {"vote_1000", "Can I NOW rate maps?", "Submit 1000 votes on Maps", Collectable::Votes, 1000, "RL_commVote01.png"_spr}
 };
 static constexpr Achievement s_miscAchievements[] {
-    {"misc_begin", "It Rating Out Time", "Play a Rated Layout for the first time", Collectable::Misc, 1, "RL_btn01.png"_spr},
-    {"misc_finish", "Laying Out!", "Complete a Rated Layout for the first time", Collectable::Misc, 1, "RL_btn01.png"_spr},
-    {"misc_news", "Layouts Out Loud", "Check the Rated Layouts Announcement", Collectable::Misc, 1, "RL_news01.png"_spr},
-    {"misc_credits", "Our Beautiful Team", "View the Rated Layouts Credits", Collectable::Misc, 1, "RL_creditsIcon.png"_spr},
+    {"misc_begin", "It Rating Out Time", "Play a Rated Map for the first time", Collectable::Misc, 1, "RL_btn01.png"_spr},
+    {"misc_finish", "Laying Out!", "Complete a Rated Map for the first time", Collectable::Misc, 1, "RL_btn01.png"_spr},
+    {"misc_news", "Maps Out Loud", "Check the Rated Maps Announcement", Collectable::Misc, 1, "RL_news01.png"_spr},
+    {"misc_credits", "Our Beautiful Team", "View the Rated Maps Credits", Collectable::Misc, 1, "RL_creditsIcon.png"_spr},
     {"misc_ruby", "Cha-ching!", "Purchase your first cosmetic in the Ruby Shop", Collectable::Misc, 1, "RL_rubiesIcon.png"_spr},
     {"misc_leaderboard", "Best of the Best", "Be on the Leaderboard", Collectable::Misc, 1, "rankIcon_top500_001.png"},
     {"misc_custom_bg", "Personal Stylist", "Set a Custom Background or Ground", Collectable::Misc, 1, "bgIcon_01_001.png"},
-    {"misc_creator_1", "A Fellow Creator", "Talk to the Layout Creator for the first time", Collectable::Misc, 1, "RL_bob.png"_spr},
-    {"misc_creator_25", "Layout entrepreneur", "Talk to the Layout Creator 25 times", Collectable::Misc, 1, "RL_bob.png"_spr},
-    {"misc_creator_50", "Nosey Creator", "Talk to the Layout Creator 50 times", Collectable::Misc, 1, "RL_bob.png"_spr},
-    {"misc_creator_100", "Business Layout Creator", "Talk to the Layout Creator 100 times", Collectable::Misc, 1, "RL_bob.png"_spr},
-    {"misc_browser", "www.ratedlayouts.com", "Browse the Rated Layouts Website", Collectable::Misc, 1, "RL_browser01.png"_spr},
+    {"misc_creator_1", "A Fellow Creator", "Talk to the Map Creator for the first time", Collectable::Misc, 1, "RL_bob.png"_spr},
+    {"misc_creator_25", "Map entrepreneur", "Talk to the Map Creator 25 times", Collectable::Misc, 1, "RL_bob.png"_spr},
+    {"misc_creator_50", "Nosey Creator", "Talk to the Map Creator 50 times", Collectable::Misc, 1, "RL_bob.png"_spr},
+    {"misc_creator_100", "Business Map Creator", "Talk to the Map Creator 100 times", Collectable::Misc, 1, "RL_bob.png"_spr},
+    {"misc_browser", "www.ratedmaps.com", "Browse the Rated Maps Website", Collectable::Misc, 1, "RL_browser01.png"_spr},
     {"misc_salt", "SALT finally rated", "but is it verified?", Collectable::Misc, 1, "RL_bob.png"_spr},
-    {"misc_arcticwoof", "Find the Woof", "Find the Rated Layouts Creator", Collectable::Misc, 1, "RL_arcticwoof01.png"_spr},
-    {"misc_gauntlet", "Gauntlet Conqueror", "Complete a Layout Gauntlet", Collectable::Misc, 1, "RL_gauntlet-2.png"_spr},
+    {"misc_arcticwoof", "Find the Woof", "Find the Rated Maps Creator", Collectable::Misc, 1, "RL_arcticwoof01.png"_spr},
+    {"misc_gauntlet", "Gauntlet Conqueror", "Complete a Map Gauntlet", Collectable::Misc, 1, "RL_gauntlet-2.png"_spr},
     {"misc_spire", "Something has aligned...", "You now know about it, be careful about where you go…", Collectable::Misc, 1, "RL_planetBig.png"_spr},
     {"misc_code", "Cosmos has accepted you", "Redeem a code to the Cosmos", Collectable::Misc, 1, "RL_oracle.png"_spr},
     {"misc_room", "Trespasser", "Complete a Spire Room.", Collectable::Misc, 1, "RL_spireDoor_unlocked.png"_spr},
-    {"misc_extreme", "TOP ONE LAYOUT LIST!", "Complete an Extreme Demon Rated Layout", Collectable::Misc, 1, "diffIcon_10_btn_001.png"},
+    {"misc_extreme", "TOP ONE MAP LIST!", "Complete an Extreme Demon Rated Map", Collectable::Misc, 1, "diffIcon_10_btn_001.png"},
     {"misc_goog", "GOOG CAT!!!", "Find the goog cat dialogue...", Collectable::Misc, 1, "RL_goog.png"_spr},
     {"misc_gem", "Get Gem To Win Experience", "Beat the level 'Get Gem To Win'", Collectable::Misc, 1, "GJ_bigDiamond_noShadow_001.png"}
 };
