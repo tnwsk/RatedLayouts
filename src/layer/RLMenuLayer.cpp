@@ -11,7 +11,7 @@
 #include <cue/RepeatingBackground.hpp>
 #include <optional>
 
-#include "level/RLEventMaps.hpp"
+#include "level/RLEventLayouts.hpp"
 #include "level/RLNotificationOverlay.hpp"
 #include "level/RLSelectSends.hpp"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"

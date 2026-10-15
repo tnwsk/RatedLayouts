@@ -1,4 +1,4 @@
-#include "RLEventMaps.hpp"
+#include "RLEventLayouts.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/ui/NineSlice.hpp>
 
@@ -531,7 +531,7 @@ void RLEventLayouts::update(float dt) {
                     psec.pendingKey.clear();
                     psec.pendingLevelId = -1;
                 } else {
-                    log::debug("RLEventMaps: Loading level {} into LevelCell",
+                    log::debug("RLEventLayouts: Loading level {} into LevelCell",
                         psec.pendingLevelId);
                     if (psec.levelCell) {
                         psec.levelCell->loadFromLevel(match);
@@ -577,7 +577,7 @@ void RLEventLayouts::update(float dt) {
                     psec.pendingPlatKey.clear();
                     psec.pendingPlatLevelId = -1;
                 } else {
-                    log::debug("RLEventMaps: Loading plat level {} into PlatCell",
+                    log::debug("RLEventLayouts: Loading plat level {} into PlatCell",
                         psec.pendingPlatLevelId);
                     if (psec.platLevelCell) {
                         psec.platLevelCell->loadFromLevel(match);
