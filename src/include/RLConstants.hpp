@@ -13,7 +13,7 @@ namespace rl {
 constexpr int ARCTICWOOF_ACCOUNT_ID = 7689052;
 
 // Base URL for all Rated Layouts API endpoints.
-inline constexpr std::string_view BASE_API_URL = "https://ratedmaps.speakinghead.serv00.net";
+inline constexpr std::string_view BASE_API_URL = "https://ratedlayouts.speakinghead.serv00.net";
 
 struct Keys {
     static inline constexpr std::string_view USER_INFO = "user_info";
