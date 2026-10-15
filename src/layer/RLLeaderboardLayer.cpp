@@ -223,32 +223,32 @@ void RLLeaderboardLayer::refresh(CCObject* sender, int type) {
 }
 
 void RLLeaderboardLayer::onInfoButton(CCObject* sender) {
-    MDPopup::create("Rated Layouts Leaderboard",
-                    "The leaderboard shows the top players in <cb>Rated Layouts</c> based "
+    MDPopup::create("Rated Maps Leaderboard",
+                    "The leaderboard shows the top players in <cb>Rated Maps</c> based "
                     "on <cl>Sparks</c>, <co>Planets</c>, <cb>Blue Coins</c>, <cf>Blueprint "
                     "Points</c> and <cg>Votes</c>. "
                     "You can "
                     "view each category by selecting the tabs.\n\n"
-                    "- <cl>Sparks</c> are earned by completing a <cb>Classic Rated Layouts</c> "
+                    "- <cl>Sparks</c> are earned by completing a <cb>Classic Rated Maps</c> "
                     "level and are only "
                     "counted when "
                     "beaten legitimately.\n"
-                    "- <co>Planets</c> are earned by completing a <cb>Platformer Rated Layouts</c> "
+                    "- <co>Planets</c> are earned by completing a <cb>Platformer Rated Maps</c> "
                     "level and are only "
                     "counted when "
                     "beaten legitimately.\n"
                     "- <cb>Blue Coins</c> are earned by collecting them while playing in Rated "
-                    "Layouts levels.\n"
-                    "- <cf>Blueprint Points</c> are earned based on how many rated layout levels "
+                    "Maps levels.\n"
+                    "- <cf>Blueprint Points</c> are earned based on how many rated map levels "
                     "you have in your "
                     "account, and "
                     "users who are excluded "
                     "won't be affected by this leaderboard.\n\n"
-                    "You can toggle between those who interacted with the <cl>Rated Layouts "
+                    "You can toggle between those who interacted with the <cl>Rated Maps "
                     "Mod</c> and those who never "
                     "use the "
                     "mod in the <cb>Top Creator</c> tab.\n\n"
-                    "Getting a <cs>Rated</c> layout earns you 1 point, <cg>Featured</c> levels "
+                    "Getting a <cs>Rated</c> map earns you 1 point, <cg>Featured</c> levels "
                     "earn you 2 points, "
                     "<cp>Epic</c> "
                     "levels earn you 3 points, and <cd>Legendary</c> levels earn you 4 points.\n\n"
@@ -276,7 +276,7 @@ void RLLeaderboardLayer::onAccountRefreshButton(CCObject* sender) {
     createQuickPopup(
         "Update Account Info",
         "Are you sure you want to <cg>update your account information</c> to <cl>Rated "
-        "Layouts</c>?\n<cy>Only use this "
+        "Maps</c>?\n<cy>Only use this "
         "if you changed your username or icons recently and need to show the updated "
         "information.</c>",
         "No",

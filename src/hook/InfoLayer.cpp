@@ -54,7 +54,7 @@ class $modify(RLLInfoLayer, InfoLayer) {
                     auto reportButton = CCMenuItemSpriteExtra::create(
                         reportButtonSpr, layerRef, menu_selector(RLLInfoLayer::onReportButton));
 
-                    reportButton->setID("rated-layouts-report-button"_spr);
+                    reportButton->setID("rated-maps-report-button"_spr);
                     auto vanillaReportButton =
                         layerRef->getChildByIDRecursive("report-button");
                     CCPoint reportPos = vanillaReportButton->getPosition();
@@ -70,7 +70,7 @@ class $modify(RLLInfoLayer, InfoLayer) {
                     auto notesButton = CCMenuItemSpriteExtra::create(
                         notesButtonSpr, layerRef, menu_selector(RLLInfoLayer::onNotesButton));
 
-                    notesButton->setID("rated-layouts-notes-button"_spr);
+                    notesButton->setID("rated-maps-notes-button"_spr);
                     mainMenu->addChild(notesButton);
                     notesButton->setPosition({reportPos.x,
                         reportPos.y + 50});
@@ -96,9 +96,9 @@ class $modify(RLLInfoLayer, InfoLayer) {
 
     void onReportButton(CCObject* sender) {
         if (GJAccountManager::sharedState()->m_accountID == 0) {
-            FLAlertLayer::create("Rated Layouts",
+            FLAlertLayer::create("Rated Maps",
                 "You must be <cg>logged in</c> to access this "
-                "feature in <cl>Rated Layouts.</c>",
+                "feature in <cl>Rated Maps.</c>",
                 "OK")
                 ->show();
             return;
@@ -106,7 +106,7 @@ class $modify(RLLInfoLayer, InfoLayer) {
 
         if (rl::isGDPS()) {
             FLAlertLayer::create(
-                "Rated Layouts",
+                "Rated Maps",
                 "This feature is not available on <cy>GDPS servers.</c>",
                 "OK")
                 ->show();
@@ -120,9 +120,9 @@ class $modify(RLLInfoLayer, InfoLayer) {
 
     void onNotesButton(CCObject* sender) {
         if (GJAccountManager::sharedState()->m_accountID == 0) {
-            FLAlertLayer::create("Rated Layouts",
+            FLAlertLayer::create("Rated Maps",
                 "You must be <cg>logged in</c> to access this "
-                "feature in <cl>Rated Layouts.</c>",
+                "feature in <cl>Rated Maps.</c>",
                 "OK")
                 ->show();
             return;
@@ -130,7 +130,7 @@ class $modify(RLLInfoLayer, InfoLayer) {
 
         if (rl::isGDPS()) {
             FLAlertLayer::create(
-                "Rated Layouts",
+                "Rated Maps",
                 "This feature is not available on <cy>GDPS servers.</c>",
                 "OK")
                 ->show();

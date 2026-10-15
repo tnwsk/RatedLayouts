@@ -13,7 +13,7 @@ namespace rl {
 constexpr int ARCTICWOOF_ACCOUNT_ID = 7689052;
 
 // Base URL for all Rated Layouts API endpoints.
-inline constexpr std::string_view BASE_API_URL = "https://ratedlayouts.speakinghead.serv00.net";
+inline constexpr std::string_view BASE_API_URL = "https://ratedmaps.speakinghead.serv00.net";
 
 struct Keys {
     static inline constexpr std::string_view USER_INFO = "user_info";
@@ -86,18 +86,18 @@ public:
 // clang-format off
 inline constexpr RLBadgeInfo g_InfoOwner{
     "rl-owner"_spr,
-    "Rated Layouts Owner",
-    "<cf>This user</c> is the owner of <cl>Rated Layouts</c>. "
+    "Rated Maps Owner",
+    "<cf>This user</c> is the owner of <cl>Rated Maps</c>. "
     "They have the ability to <cg>promote admins</c>, manages the entire <cg>community</c> "
-    "and <co>moderation team</c> and has <cy>all permissions</c> within <cl>Rated Layouts</c>.",
+    "and <co>moderation team</c> and has <cy>all permissions</c> within <cl>Rated Maps</c>.",
     "RL_badgeOwner.png"_spr,
     "RL_badgeOwnerBig.png"_spr,
     RLBadgeKind::Owner, 1
 };
 inline constexpr RLBadgeInfo g_InfoDeveloper{
     "rl-developer"_spr,
-    "Rated Layouts Developer",
-    "<cf>This user</c> is a developer for <cl>Rated Layouts</c>. "
+    "Rated Maps Developer",
+    "<cf>This user</c> is a developer for <cl>Rated Maps</c>. "
     "They are responsible for maintaining the <co>Backend Server</c>, <cb>Discord Bot</c>, "
     "<cp>Geode Mod</c> and other infrastructure of this mod.",
     "RL_badgeDeveloper.png"_spr,
@@ -107,29 +107,29 @@ inline constexpr RLBadgeInfo g_InfoDeveloper{
 
 inline constexpr RLBadgeInfo g_InfoClassicAdmin{
     "rl-classic-admin"_spr,
-    "Classic Layout Admin",
-    "<cr>Classic Layout Admin</c> has the ability to <cy>rate classic levels</c>, "
-    "<cb>suggest classic levels</c>, <cc>manage Featured Layouts</c> and <cg>promote users "
-    "into Classic Layout Mod</c> for <cl>Rated Layouts</c>.",
+    "Classic Map Admin",
+    "<cr>Classic Map Admin</c> has the ability to <cy>rate classic levels</c>, "
+    "<cb>suggest classic levels</c>, <cc>manage Featured Maps</c> and <cg>promote users "
+    "into Classic Map Mod</c> for <cl>Rated Maps</c>.",
     "RL_badgeAdmin01.png"_spr,
     "RL_badgeAdminBig.png"_spr,
     RLBadgeKind::ClassicAdmin, 2
 };
 inline constexpr RLBadgeInfo g_InfoPlatAdmin{
     "rl-plat-admin"_spr,
-    "Platformer Layout Admin",
-    "<cr>Platformer Layout Admin</c> has the ability to <cy>rate platformer levels</c>, "
-    "<cb>suggest platformer levels</c>, <cc>manage Featured Layouts</c> and <cg>promote users "
-    "into Platformer Layout Mod</c> for <cl>Rated Layouts</c>.",
+    "Platformer Map Admin",
+    "<cr>Platformer Map Admin</c> has the ability to <cy>rate platformer levels</c>, "
+    "<cb>suggest platformer levels</c>, <cc>manage Featured Maps</c> and <cg>promote users "
+    "into Platformer Map Mod</c> for <cl>Rated Maps</c>.",
     "RL_badgePlatAdmin01.png"_spr,
     RLBadgeInfo::DEFAULT,
     RLBadgeKind::PlatAdmin, 2
 };
 inline constexpr RLBadgeInfo g_InfoLeaderboardAdmin{
     "rl-lb-admin"_spr,
-    "LB Layout Admin",
-    "<cr>Leaderboard Layout Admin</c> has the same abilities as <cc>Leaderboard Layout Moderator</c>, "
-    "but can also <cf>whitelist</c> users and <cg>promote users into Leaderboard Layout Mod</c>.",
+    "LB Map Admin",
+    "<cr>Leaderboard Map Admin</c> has the same abilities as <cc>Leaderboard Map Moderator</c>, "
+    "but can also <cf>whitelist</c> users and <cg>promote users into Leaderboard Map Mod</c>.",
     "RL_badgelbAdmin01.png"_spr,
     RLBadgeInfo::DEFAULT,
     RLBadgeKind::LeaderboardAdmin, 2
@@ -137,25 +137,25 @@ inline constexpr RLBadgeInfo g_InfoLeaderboardAdmin{
 
 inline constexpr RLBadgeInfo g_InfoClassicMod{
     "rl-classic-mod"_spr,
-    "Classic Layout Mod",
-    "<cb>Classic Layout Moderator</c> can suggest levels for classic layouts to <cr>Classic Layout Admins</c>.",
+    "Classic Map Mod",
+    "<cb>Classic Map Moderator</c> can suggest levels for classic maps to <cr>Classic Map Admins</c>.",
     "RL_badgeMod01.png"_spr,
     "RL_badgeModBig.png"_spr,
     RLBadgeKind::ClassicMod, 3
 };
 inline constexpr RLBadgeInfo g_InfoPlatMod{
     "rl-plat-mod"_spr,
-    "Platformer Layout Mod",
-    "<cb>Platformer Layout Moderator</c> can suggest levels for platformer layouts to <cr>Platformer Layout Admins</c>.",
+    "Platformer Map Mod",
+    "<cb>Platformer Map Moderator</c> can suggest levels for platformer maps to <cr>Platformer Map Admins</c>.",
     "RL_badgePlatMod01.png"_spr,
     RLBadgeInfo::DEFAULT,
     RLBadgeKind::PlatMod, 3
 };
 inline constexpr RLBadgeInfo g_InfoLeaderboardMod{
     "rl-lb-mod"_spr,
-    "LB Layout Mod",
-    "<cb>Leaderboard Layout Moderator</c> is responsible for <co>managing and "
-    "moderating the leaderboard</c> section of <cl>Rated Layouts</c>.",
+    "LB Map Mod",
+    "<cb>Leaderboard Map Moderator</c> is responsible for <co>managing and "
+    "moderating the leaderboard</c> section of <cl>Rated Maps</c>.",
     "RL_badgelbMod01.png"_spr,
     RLBadgeInfo::DEFAULT,
     RLBadgeKind::LeaderboardMod, 3
@@ -163,17 +163,17 @@ inline constexpr RLBadgeInfo g_InfoLeaderboardMod{
 
 inline constexpr RLBadgeInfo g_InfoSupporter{
     "rl-supporter"_spr,
-    "Layout Supporter",
-    "<cp>Layout Supporter</c> are those who donated to support the development of <cl>Rated Layouts</c>.",
+    "Map Supporter",
+    "<cp>Map Supporter</c> are those who donated to support the development of <cl>Rated Maps</c>.",
     "RL_badgeSupporter.png"_spr,
     "RL_badgeSupporterBig.png"_spr,
     RLBadgeKind::Supporter, 4
 };
 inline constexpr RLBadgeInfo g_InfoBooster{
     "rl-booster"_spr,
-    "Layout Booster",
-    "<ca>Layout Booster</c> are those who boosted the <cl>Rated Layouts Discord server</c>, "
-    "they also have the same benefits as <cp>Layout Supporter</c>.",
+    "Map Booster",
+    "<ca>Map Booster</c> are those who boosted the <cl>Rated Maps Discord server</c>, "
+    "they also have the same benefits as <cp>Map Supporter</c>.",
     "RL_badgeBooster.png"_spr,
     RLBadgeInfo::DEFAULT,
     RLBadgeKind::Booster, 4

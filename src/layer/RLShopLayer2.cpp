@@ -708,7 +708,7 @@ void RLShopLayer2::onShopkeeperDialog(CCObject* sender) {
     case 1: response = "I got all of the <cg>nameplates</c> in stock!"; break;
     case 2:
         response =
-            "<cg>Layout Creator</c>? <cl>Well, he kind of ran away when I arrived</c>"
+            "<cg>Map Creator</c>? <cl>Well, he kind of ran away when I arrived</c>"
             ", odd fella but oh well...";
         break;
     case 3:
@@ -764,7 +764,7 @@ void RLShopLayer2::onShopkeeperDialog(CCObject* sender) {
         break;
     case 19:
     case 20:
-        response = "Wow <cl>Rated Layouts</c> updated after months... thats <co>shocking</c>...";
+        response = "Wow <cl>Rated Maps</c> updated after months... thats <co>shocking</c>...";
         break;
     default:
         response = "<cg>Weh!</c>";
@@ -911,7 +911,7 @@ void RLShopLayer2::onResetRubies() {
                      "<cy>This will clear all your rubies to zero, reset your redeemed codes and "
                      "all your collected "
                      "rubies but you can reclaim rubies back "
-                     "from any completed rated layouts.</c>",
+                     "from any completed rated maps.</c>",
                      "No",
                      "Yes",
                      [this](FLAlertLayer*, bool yes) {

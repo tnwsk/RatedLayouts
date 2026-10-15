@@ -23,7 +23,7 @@ bool RLQueueLevelPopup::init() {
     if (!Popup::init(400.f, 250.f, "GJ_square02.png"))
         return false;
 
-    this->setTitle("Submit your Layout into the Queue!");
+    this->setTitle("Submit your Map into the Queue!");
     addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupGold, false);
 
     // level id input
@@ -160,7 +160,7 @@ void RLQueueLevelPopup::submitToQueue(CCObject* sender) {
     }
 
     createQuickPopup("Submit to Queue",
-        "Are you sure you want to <co>submit</c> this <cg>level to the queue</c>?\n<cy>Any non-layout related levels will result in blacklist from using this feature.</c>",
+        "Are you sure you want to <co>submit</c> this <cg>level to the queue</c>?\n<cy>Any non-map related levels will result in blacklist from using this feature.</c>",
         "No",
         "Yes",
         [this](auto, bool yes) {
@@ -251,12 +251,12 @@ void RLQueueLevelPopup::loadLevelsFailed(char const* key, int p1) {
 }
 
 void RLQueueLevelPopup::onInfo(CCObject* sender) {
-    MDPopup::create("How to submit your layout into the queue",
-        "As a <cp>Layout Supporter</c>, you get the ability to submit your layouts directly into an <cg>in-game queue system</c>!\n\n"
+    MDPopup::create("How to submit your map into the queue",
+        "As a <cp>Map Supporter</c>, you get the ability to submit your maps directly into an <cg>in-game queue system</c>!\n\n"
         "To use this feature, simply enter your Level ID then click the <cc>Search Button</c>, this will load your level into the level cell below.\n\n"
-        "Once you have your level loaded, click the <cc>Submit to Queue</c> button to submit your layout into the queue.\n\n"
-        "From there, your layout will be reviewed by <cl>Layout Moderators</c> and/or <cr>Layout Admins</c> to be viewed and potentially be sent/rejected depending if it meets the <cg>rating standards</c>\n\n"
-        "To prevent spamming the queue, you can only submit a layout once per <co>certain amount of time</c>, and submitting a <cy>non-layout related level</c> will result in a <cr>blacklist from using this feature</c>.\n\n",
+        "Once you have your level loaded, click the <cc>Submit to Queue</c> button to submit your map into the queue.\n\n"
+        "From there, your map will be reviewed by <cl>Map Moderators</c> and/or <cr>Map Admins</c> to be viewed and potentially be sent/rejected depending if it meets the <cg>rating standards</c>\n\n"
+        "To prevent spamming the queue, you can only submit a map once per <co>certain amount of time</c>, and submitting a <cy>non-map related level</c> will result in a <cr>blacklist from using this feature</c>.\n\n",
         "OK")
         ->show();
 }

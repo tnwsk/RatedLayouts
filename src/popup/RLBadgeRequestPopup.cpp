@@ -29,7 +29,7 @@ RLBadgeRequestPopup* RLBadgeRequestPopup::create() {
 bool RLBadgeRequestPopup::init() {
     if (!Popup::init(440.f, 280.f, "GJ_square04.png")) return false;
 
-    setTitle("Claim Layout Supporter Badge");
+    setTitle("Claim Map Supporter Badge");
 
     auto cs = m_mainLayer->getContentSize();
 
@@ -49,10 +49,10 @@ bool RLBadgeRequestPopup::init() {
     // info text
     auto infoText = MDTextArea::create(
         "Enter your <co>Email Address</c> or <cb>Discord Userame</c> that is linked "
-        "to your <cp>Ko-fi account</c> to receive a <cp>Layout Supporter Badge</c>.\n\n"
+        "to your <cp>Ko-fi account</c> to receive a <cp>Map Supporter Badge</c>.\n\n"
         "After you <cg>successfuly get your badge</c>, you can click the <co>Request</c> button to "
-        "request access to supporter-only features in Rated Layouts!\n\n"
-        "Make sure that you got the [<cd>Rated Layouts Supporter "
+        "request access to supporter-only features in Rated Maps!\n\n"
+        "Make sure that you got the [<cd>Rated Maps Supporter "
         "Membership</c>](https://ko-fi.com/arcticwoof/) and have already <cg>linked</c> your "
         "<cb>Email</c> through <cp>Ko-fi.</c> beforehand!\n\n"
         "### If you encounter any <cr>issues</c> during this process, please contact "

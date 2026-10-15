@@ -1077,7 +1077,7 @@ void RLModRatePopup::onDeleteSendsButton(CCObject* sender) {
     std::string title = std::string("Delete Sends?");
     geode::createQuickPopup(
         "Delete Sends?",
-        "Are you sure you want to <cr>delete sends and reject</c> this layout?\n<cy>This action cannot be undone.</c>",
+        "Are you sure you want to <cr>delete sends and reject</c> this map?\n<cy>This action cannot be undone.</c>",
         "No",
         "Delete",
         [this](auto, bool yes) {
@@ -1141,7 +1141,7 @@ void RLModRatePopup::onDeleteSendsButton(CCObject* sender) {
 }
 
 void RLModRatePopup::onUnsendButton(CCObject* sender) {
-    auto popup = UploadActionPopup::create(nullptr, "Unsending layout...");
+    auto popup = UploadActionPopup::create(nullptr, "Unsending map...");
     popup->show();
     log::info("Unsending - Level ID: {}", m_levelId);
     // Get argon token
@@ -1181,15 +1181,15 @@ void RLModRatePopup::onUnsendButton(CCObject* sender) {
             bool success = json["success"].asBool().unwrapOrDefault();
             if (success) {
                 log::info("Unsend successful!");
-                popupRef->showSuccessMessage("Layout unsent!");
+                popupRef->showSuccessMessage("Map unsent!");
             } else {
-                popupRef->showFailMessage("Failed to unsend layout.");
+                popupRef->showFailMessage("Failed to unsend map.");
             }
         });
 }
 
 void RLModRatePopup::onRateButton(CCObject* sender) {
-    auto popup = UploadActionPopup::create(nullptr, "Submitting layout...");
+    auto popup = UploadActionPopup::create(nullptr, "Submitting map...");
     popup->show();
     log::info(
         "Submitting - Difficulty: {}, Featured: {}, Demon: {}, Rejected: {}",
@@ -1268,14 +1268,14 @@ void RLModRatePopup::onUnrateButton(CCObject* sender) {
         std::string("Unrate ") + m_level->m_levelName.c_str() + "?";
     geode::createQuickPopup(
         title.c_str(),
-        "Are you sure you want to <cr>unrate</c> this layout?\n<cy>This action "
+        "Are you sure you want to <cr>unrate</c> this map?\n<cy>This action "
         "will be visible to everyone.</c>",
         "No",
         "Unrate",
         [this](auto, bool yes) {
             if (!yes)
                 return;
-            auto popup = UploadActionPopup::create(nullptr, "Unrating layout...");
+            auto popup = UploadActionPopup::create(nullptr, "Unrating map...");
             popup->show();
             log::info("Unrate button clicked");
 
@@ -1356,7 +1356,7 @@ void RLModRatePopup::onUnrateButton(CCObject* sender) {
                             }
                         }
 
-                        popupRef->showSuccessMessage("Layout unrated successfully!");
+                        popupRef->showSuccessMessage("Map unrated successfully!");
                     } else {
                         log::warn("Unrate submission failed: success is false");
                         popupRef->showFailMessage("Failed! Try again later.");
@@ -1425,7 +1425,7 @@ void RLModRatePopup::onRejectButton(CCObject* sender) {
 }
 
 void RLModRatePopup::onSuggestButton(CCObject* sender) {
-    auto popup = UploadActionPopup::create(nullptr, "Suggesting layout...");
+    auto popup = UploadActionPopup::create(nullptr, "Suggesting map...");
     popup->show();
     log::info("Suggest button clicked");
 
@@ -1984,11 +1984,11 @@ void RLModRatePopup::onSetEventButton(CCObject* sender) {
         return;
     }
 
-    std::string title = std::string("Set ") + type + " layout?";
+    std::string title = std::string("Set ") + type + " map?";
     std::string content =
         std::string(
             "Are you sure you want to set this <cg>level</c> as the <co>") +
-        type + " layout?</c>";
+        type + " map?</c>";
 
     geode::createQuickPopup(
         title.c_str(), content.c_str(), "No", "Yes", [this, type, token](auto, bool yes) {

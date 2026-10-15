@@ -14,7 +14,7 @@ public:
     };
 
     static RLModRatePopup* create(PopupRole role,
-        std::string title = "Rate Layout",
+        std::string title = "Rate Map",
         GJGameLevel* level = nullptr);
     ~RLModRatePopup() {
         m_getModLevelTask.cancel();

@@ -101,7 +101,7 @@ class $modify(RLPlayLayer, PlayLayer) {
                     self->m_fields->m_levelDifficulty = difficulty;
 
                     if (!isSuggested) {
-                        log::debug("Level {} is a rated layout", lvlId);
+                        log::debug("Level {} is a rated map", lvlId);
                         self->m_fields->m_isRatedLayout = true;
                     }
 
@@ -197,7 +197,7 @@ class $modify(RLPlayLayer, PlayLayer) {
                 std::min(desired, std::min(remaining, awardableByPercent));
 
             log::debug(
-                "Adjusting reward (demonKey->ruby) for rated layout: total={}, "
+                "Adjusting reward (demonKey->ruby) for rated map: total={}, "
                 "collected={}, percent={}, calcAtPercent={}, awardableByPercent={}, "
                 "remaining={}, requestedOrbs={}, adjustedRubies={}",
                 totalRuby,

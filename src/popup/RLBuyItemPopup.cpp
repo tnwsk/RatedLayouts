@@ -233,7 +233,7 @@ void RLBuyItemPopup::onBuy(CCObject* sender) {
                 response = fmt::format("Yikes! Your just <cr>{} rubies short</c>, can't let you have this.",
                                        m_value - current);
                 break;
-            case 6: response = "Go play some <cl>layouts</c> to earn more <cr>rubies</c>!"; break;
+            case 6: response = "Go play some <cl>maps</c> to earn more <cr>rubies</c>!"; break;
             case 7: response = "Oh, you short on <cr>rubies</c>? That's unfortunate. womp womp"; break;
             case 8:
                 response = fmt::format("<cr>ERROR! INSUFFICIENT RUBIES! GO HOME</c> <cg>{}</c>!",

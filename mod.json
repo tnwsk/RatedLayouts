@@ -8,7 +8,7 @@
 	},
 	"id": "reject.tnwsk-rates",
 	"name": "Rated World Levels",
-	"version": "v2.0.4",
+	"version": "v2.1.1",
 	"developers": ["reject", "ArcticWoof", "Yang"],
 	"description": "hi",
 	"resources": {
@@ -77,7 +77,7 @@
 	},
 	"links": {
 		"source": "https://github.com/tnwsk/RatedLayouts",
-		"homepage": "https://ratedlayouts.speakinghead.serv00.net/",
+		"homepage": "https://ratedmaps.speakinghead.serv00.net/",
 		"community": "https://google.com/search?q=money"
 	},
 	"tags": [
@@ -102,7 +102,7 @@
 			"name": "Disable Moving Background",
 			"type": "bool",
 			"default": false,
-			"description": "Disable moving background in **all Rated Layouts Menus**. <cy>Enable this setting if you experience performance issues.</cy>"
+			"description": "Disable moving background in **all Rated Maps Menus**. <cy>Enable this setting if you experience performance issues.</cy>"
 		},
 		"rgbBackground": {
 			"type": "rgb",
@@ -114,7 +114,7 @@
 			"type": "int",
 			"name": "Background Type",
 			"default": 1,
-			"description": "Change the custom moving background in the Rated Layouts page. <cy>Numbers are based off the order shown in the background selection in editor.</cy>",
+			"description": "Change the custom moving background in the Rated Maps page. <cy>Numbers are based off the order shown in the background selection in editor.</cy>",
 			"min": 1,
 			"max": 59,
 			"control": {
@@ -135,20 +135,20 @@
 			"name": "Disable Notification",
 			"type": "bool",
 			"default": false,
-			"description": "Disables the notification that appears when a new rated or event layout occurs."
+			"description": "Disables the notification that appears when a new rated or event map occurs."
 		},
 		"disableNewRateInLevel": {
 			"name": "Disable Notification in Level",
 			"type": "bool",
 			"default": true,
-			"description": "Disables the notification that appears when a new rated or event layout occurs while you are in a level. <cy>Enable this if you find the notification distracting while playing.</cy>",
+			"description": "Disables the notification that appears when a new rated or event map occurs while you are in a level. <cy>Enable this if you find the notification distracting while playing.</cy>",
 			"enable-if": "!disableNewRate"
 		},
 		"notiScale": {
 			"type": "float",
 			"name": "Notification Scale",
 			"default": 0.5,
-			"description": "Set the scale of the newly rated/event layout notification. <cy>Minimum is 0.1, and Maximum is 1.0.</cy>",
+			"description": "Set the scale of the newly rated/event map notification. <cy>Minimum is 0.1, and Maximum is 1.0.</cy>",
 			"min": 0.1,
 			"max": 1.0,
 			"control": {
@@ -163,7 +163,7 @@
 			"type": "float",
 			"name": "Polling Interval (Seconds)",
 			"default": 30,
-			"description": "Set the polling interval for checking newly rated/event layouts. <cy>Minimum is 1 second.</cy>",
+			"description": "Set the polling interval for checking newly rated/event maps. <cy>Minimum is 1 second.</cy>",
 			"min": 10.0,
 			"max": 60.0,
 			"control": {
@@ -178,7 +178,7 @@
 			"type": "int",
 			"name": "Remove Notification After (Seconds)",
 			"default": 5,
-			"description": "Set the time duration for how long the newly rated/event layout notification stays on screen. <cy>Minimum is 1 second.</cy>",
+			"description": "Set the time duration for how long the newly rated/event map notification stays on screen. <cy>Minimum is 1 second.</cy>",
 			"min": 1,
 			"max": 30,
 			"control": {
@@ -197,7 +197,7 @@
 			"name": "Disable Nameplate in Leaderboard",
 			"type": "bool",
 			"default": false,
-			"description": "Disable the nameplate in Rated Layouts leaderboards."
+			"description": "Disable the nameplate in Rated Maps leaderboards."
 		},
 		"disableNameplateInComment": {
 			"name": "Disable Nameplate in Comments",
@@ -210,7 +210,7 @@
 			"name": "Accessibility Settings"
 		},
 		"disableRLReq": {
-			"name": "Disable Rated Layouts Mod Requests",
+			"name": "Disable Rated Maps Mod Requests",
 			"type": "bool",
 			"default": false,
 			"description": "Disable the RL mod requests. <cy>Enable this if you want to use the REQ button normally, this is purely for Vanilla GD Mods only.</cy>"
@@ -219,32 +219,32 @@
 			"name": "Disable Stats Menu Button",
 			"type": "bool",
 			"default": false,
-			"description": "Disable the Rated Layouts stats menu button in the Profile Page."
+			"description": "Disable the Rated Maps stats menu button in the Profile Page."
 		},
 		"disableMenuAnimation": {
 			"name": "Disable Menu Animation",
 			"type": "bool",
 			"default": false,
-			"description": "Disable the animation when opening the Rated Layouts menu.",
+			"description": "Disable the animation when opening the Rated Maps menu.",
 			"enable-if": "!disableRLMenu"
 		},
 		"disableRewardAnimation": {
 			"name": "Disable Reward Animation",
 			"type": "bool",
 			"default": false,
-			"description": "Disable the reward animation when you complete a rated layout level. <cy>Enable this if the reward animation causes crashes.</cy>"
+			"description": "Disable the reward animation when you complete a rated map level. <cy>Enable this if the reward animation causes crashes.</cy>"
 		},
 		"disableParticles": {
 			"name": "Disable Title Particles",
 			"type": "bool",
 			"default": false,
-			"description": "Disables particle effects in the Legendary+ Rated Layouts level name title. <cy>Enable this setting if you experience performance issues.</cy>"
+			"description": "Disables particle effects in the Legendary+ Rated Maps level name title. <cy>Enable this setting if you experience performance issues.</cy>"
 		},
 		"disableRLSearchLayer": {
 			"name": "Disable RL Search Button",
 			"type": "bool",
 			"default": false,
-			"description": "Disables the rated layouts spark button from bringing you to the search layer if you're in the normal search layer."
+			"description": "Disables the rated maps spark button from bringing you to the search layer if you're in the normal search layer."
 		},
 		"titleComment": {
 			"type": "title",
@@ -254,7 +254,7 @@
 			"name": "Disable Comment Glow",
 			"type": "bool",
 			"default": false,
-			"description": "Disables the blue glow effect on comments made by users using the Rated Layouts mod."
+			"description": "Disables the blue glow effect on comments made by users using the Rated Maps mod."
 		},
 		"disableCommentGlowNameplate": {
 			"name": "Disable Comment Glow on Nameplate",
@@ -268,16 +268,16 @@
 			"name": "Miscellaneous Settings"
 		},
 		"disableMenuButton": {
-			"name": "Disable Rated Layouts Menu Button",
+			"name": "Disable Rated Maps Menu Button",
 			"type": "bool",
 			"default": true,
-			"description": "Disable the Rated Layouts Menu Button in the Main Menu. <cy>Enable this if you don't use the Rated Layouts Menu and want a cleaner Main Menu.</cy>"
+			"description": "Disable the Rated Maps Menu Button in the Main Menu. <cy>Enable this if you don't use the Rated Maps Menu and want a cleaner Main Menu.</cy>"
 		},
 		"disableScrollbar": {
 			"name": "Disable Scrollbar",
 			"type": "bool",
 			"default": false,
-			"description": "Disable the scrollbar in Rated Layouts leaderboards and level browser."
+			"description": "Disable the scrollbar in Rated Maps leaderboards and level browser."
 		},
 		"disableCreatorPoints": {
 			"name": "Disable Blueprint Points",
@@ -296,13 +296,13 @@
 			"name": "Disable Mod Info",
 			"type": "bool",
 			"default": false,
-			"description": "Disables the mod info shown in the Rated Layouts Creator Layer."
+			"description": "Disables the mod info shown in the Rated Maps Creator Layer."
 		},
 		"disableGarageStats": {
 			"name": "Disable Garage Stats",
 			"type": "bool",
 			"default": false,
-			"description": "Disables the garage stats shown in the Rated Layouts Creator Layer. <cy>Enable this if you kept crashing when entering in the garage layer.</cy>"
+			"description": "Disables the garage stats shown in the Rated Maps Creator Layer. <cy>Enable this if you kept crashing when entering in the garage layer.</cy>"
 		},
 		"disableShopDots": {
 			"name": "Use Shop Page Numbers",
@@ -313,7 +313,7 @@
 		"updateAccount": {
 			"type": "custom:rl-update-account-button",
 			"name": "Update Account Info",
-			"description": "Updates your Rated Layouts account information."
+			"description": "Updates your Rated Maps account information."
 		},
 		"titleCache": {
 			"type": "title",
@@ -350,28 +350,28 @@
 		"clearRequestCache": {
 			"type": "custom:rl-clear-cache-button",
 			"name": "Clear Request Cache",
-			"description": "Clears the comment role and level rating cache stored by Rated Layouts."
+			"description": "Clears the comment role and level rating cache stored by Rated Maps."
 		},
 		"titleModSettings": {
 			"type": "title",
 			"name": "Moderator-Specific Settings",
-			"description": "Layout Moderator/Admin-specific settings."
+			"description": "Map Moderator/Admin-specific settings."
 		},
-		"disableRejectedLayouts": {
-			"name": "Disable Fetching Rejected Layouts",
+		"disableRejectedMaps": {
+			"name": "Disable Fetching Rejected Maps",
 			"type": "bool",
 			"default": false,
-			"description": "Disable fetching and showing rejected layouts set by Layout Admins. <co>It reduces the number of web requests and should only be enabled if you are experiencing lag.</c> <cy>This only applies to Layout Moderators/Admins.</c>",
+			"description": "Disable fetching and showing rejected maps set by Map Admins. <co>It reduces the number of web requests and should only be enabled if you are experiencing lag.</c> <cy>This only applies to Map Moderators/Admins.</c>",
 			"enable-if": "saved:isClassicAdmin || saved:isClassicMod || saved:isPlatAdmin || saved:isPlatMod || saved:isOwner",
-			"enable-if-description": "Layout Mod or Admin only"
+			"enable-if-description": "Map Mod or Admin only"
 		},
-		"disableRejectedLayoutsGlow": {
-			"name": "Disable Rejected Layouts Glow",
+		"disableRejectedMapsGlow": {
+			"name": "Disable Rejected Maps Glow",
 			"type": "bool",
 			"default": false,
-			"description": "Disable the red glow effect on rejected layout cells.",
-			"enable-if": "!disableRejectedLayouts && (saved:isClassicAdmin || saved:isClassicMod || saved:isPlatAdmin || saved:isPlatMod || saved:isOwner)",
-			"enable-if-description": "Layout Mod or Admin only and enable 'Fetching Rejected Layouts'"
+			"description": "Disable the red glow effect on rejected map cells.",
+			"enable-if": "!disableRejectedMaps && (saved:isClassicAdmin || saved:isClassicMod || saved:isPlatAdmin || saved:isPlatMod || saved:isOwner)",
+			"enable-if-description": "Map Mod or Admin only and enable 'Fetching Rejected Maps'"
 		}
 	}
 }

@@ -645,7 +645,7 @@ class $modify(RLProfilePage, ProfilePage) {
         int accountId = m_fields->accountId;
         auto username = GameLevelManager::sharedState()->tryGetUsername(accountId);
         if (username.empty()) username = "User";
-        std::string title = fmt::format("{}'s Layouts", username);
+        std::string title = fmt::format("{}'s Maps", username);
 
         RLLevelBrowserLayer::ParamList params;
         params.emplace_back("accountId", numToString(accountId));

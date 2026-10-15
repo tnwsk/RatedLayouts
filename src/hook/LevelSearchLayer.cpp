@@ -29,8 +29,8 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer) {
     void onRatedLayoutLayer(CCObject* sender) {
         if (GJAccountManager::sharedState()->m_accountID == 0) {
             FLAlertLayer::create(
-                "Rated Layouts",
-                "You must be <cg>logged in</c> to access this feature in <cl>Rated Layouts.</c>",
+                "Rated Maps",
+                "You must be <cg>logged in</c> to access this feature in <cl>Rated Maps.</c>",
                 "OK")
                 ->show();
             return;
@@ -38,7 +38,7 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer) {
 
         if (rl::isGDPS()) {
             FLAlertLayer::create(
-                "Rated Layouts",
+                "Rated Maps",
                 "This feature is not available on <cy>GDPS servers.</c>",
                 "OK")
                 ->show();

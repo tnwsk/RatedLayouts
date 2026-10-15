@@ -194,7 +194,7 @@ RLDifficultyTotalPopup* RLDifficultyTotalPopup::create(int accountId,
 bool RLDifficultyTotalPopup::init() {
     if (!Popup::init(380.f, 210.f, "GJ_square02.png"))
         return false;
-    setTitle("Rated Layouts Classic: -");
+    setTitle("Rated Maps Classic: -");
     auto contentSize = m_mainLayer->getContentSize();
     // spinner
     auto spinner = LoadingSpinner::create(36.f);
@@ -246,9 +246,9 @@ bool RLDifficultyTotalPopup::init() {
     m_mainLayer->addChild(m_voteRankLabel);
 
     if (m_mode == Mode::Planets) {
-        setTitle("Rated Layouts Platformer: -");
+        setTitle("Rated Maps Platformer: -");
     } else {
-        setTitle("Rated Layouts Classic: -");
+        setTitle("Rated Maps Classic: -");
     }
 
     m_resultsLabel = CCLabelBMFont::create("-", "goldFont.fnt");
@@ -327,8 +327,8 @@ bool RLDifficultyTotalPopup::init() {
 
             std::string titlePrefix =
                 self->m_mode == RLDifficultyTotalPopup::Mode::Planets
-                    ? "Rated Layouts Platformer: "
-                    : "Rated Layouts Classic: ";
+                    ? "Rated Maps Platformer: "
+                    : "Rated Maps Classic: ";
             self->setTitle(
                 (titlePrefix + numToString(GameToolbox::pointsToString(totalCount)))
                     .c_str());
@@ -395,7 +395,7 @@ bool RLDifficultyTotalPopup::init() {
 void RLDifficultyTotalPopup::onAppeal(CCObject* sender) {
     createQuickPopup(
         "Appeal Leaderboard Ban",
-        "You will redirect to <cl>Rated Layouts Discord Server</c> and make an "
+        "You will redirect to <cl>Rated Maps Discord Server</c> and make an "
         "appeal of your <cr>leaderboard ban</c>.\n<cy>Continue?</c>",
         "No",
         "Yes",

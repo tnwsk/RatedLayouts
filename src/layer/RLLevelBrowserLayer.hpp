@@ -24,7 +24,7 @@ public:
 
     static RLLevelBrowserLayer* create(Mode mode,
                                        ParamList const& params = ParamList(),
-                                       std::string const& title = "Rated Layouts");
+                                       std::string const& title = "Rated Maps");
     bool init(GJSearchObject* object);
     void keyBackClicked() override;
 
