@@ -23,7 +23,7 @@ bool RLQueueLevelPopup::init() {
     if (!Popup::init(400.f, 250.f, "GJ_square02.png"))
         return false;
 
-    this->setTitle("Submit your Map into the Queue!");
+    this->setTitle("Submit your level into the Queue!");
     addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupGold, false);
 
     // level id input

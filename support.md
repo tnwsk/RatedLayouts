@@ -1,5 +1,4 @@
-# [Support Rated Maps via Ko-Fi](https://ko-fi.com/arcticwoof)
+# [Donate to furaii's wallet](user:14205366)
 
-## You get special benefits such as <cp>**Map Supporter badge**</c>, <cg>**Sneak peak on new features**</c> and more!
+You get special benefits such as **Hi**
 
-Be sure to get the <cp>Rated Maps Supporter Membership</c> to get these benefits and help support the development of <cf>Rated Maps Mod</c>!
