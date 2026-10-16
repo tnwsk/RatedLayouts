@@ -1,7 +1,7 @@
 # v2.1.5
 - dialog fixes
 - new textures coming soon thanks wiyn
-
+- more stuff changed to differentiate the mod from rated layouts
 
 # v2.1.4
 - google
