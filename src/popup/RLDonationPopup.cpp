@@ -110,7 +110,7 @@ bool RLDonationPopup::init() {
 
     // desc1
     auto desc1 = CCLabelBMFont::create(
-        "Get a special badge shown to\nall players and a colored comment within Rated Maps!", "bigFont.fnt");
+        "Get a special badge shown to\nall players and a colored comment within t!", "bigFont.fnt");
     desc1->limitLabelWidth(mainLayerWidthSpacing, 0.5f, 0.3f);
     desc1->setPosition(
         {m_mainLayer->getScaledContentSize().width / 2.f, m_mainLayer->getScaledContentSize().height - 90.f});
@@ -125,7 +125,7 @@ bool RLDonationPopup::init() {
     m_mainLayer->addChild(heading2);
     // desc2
     auto desc2 = CCLabelBMFont::create(
-        "Access exclusive and up-coming features added in Rated Maps.\nAnd get early access to these new features!",
+        "just kidding youre not getting shit LMAO",
         "bigFont.fnt");
     desc2->limitLabelWidth(mainLayerWidthSpacing, 0.5f, 0.3f);
     desc2->setPosition(
@@ -142,7 +142,7 @@ bool RLDonationPopup::init() {
 
     // desc3
     auto desc3 = CCLabelBMFont::create(
-        "Request priority consideration for your map\nsubmissions and get faster review from the team.",
+        "bro just dm a mod",
         "bigFont.fnt");
     desc3->limitLabelWidth(mainLayerWidthSpacing, 0.5f, 0.3f);
     desc3->setPosition(
@@ -164,7 +164,7 @@ bool RLDonationPopup::init() {
     donoMenu->addChild(getBadgeBtn);
 
     // open kofi link button
-    auto kofiSpr = ButtonSprite::create("Donate via Ko-fi", "goldFont.fnt", "GJ_button_03.png");
+    auto kofiSpr = ButtonSprite::create("5 dollar coin", "goldFont.fnt", "GJ_button_03.png");
     auto kofiBtn = CCMenuItemSpriteExtra::create(kofiSpr, this, menu_selector(RLDonationPopup::onClick));
     donoMenu->addChild(kofiBtn);
 
@@ -245,7 +245,7 @@ bool RLDonationPopup::init() {
     return true;
 }
 
-void RLDonationPopup::onClick(CCObject* sender) { utils::web::openLinkInBrowser("https://ko-fi.com/arcticwoof"); }
+void RLDonationPopup::onClick(CCObject* sender) { utils::web::openLinkInBrowser("https://www.cenpac.net.nr/index.html"); }
 
 void RLDonationPopup::onGetBadge(CCObject* sender) {
     auto popup = RLBadgeRequestPopup::create();

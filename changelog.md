@@ -1,3 +1,8 @@
+# v2.1.5
+- dialog fixes
+- new textures coming soon thanks wiyn
+
+
 # v2.1.4
 - google
 
