@@ -37,7 +37,7 @@ jobs:
         uses: geode-sdk/build-geode-mod@main
         with:
           combine: true
-          cli: '3.8.0'
+          cli: 'v3.8.0'
           export-pdb: true
           export-symbols: true
           target: ${{ matrix.config.target }}
