@@ -86,18 +86,18 @@ public:
 // clang-format off
 inline constexpr RLBadgeInfo g_InfoOwner{
     "rl-owner"_spr,
-    "Rated Maps Owner",
-    "<cf>This user</c> is the owner of <cl>Rated Maps</c>. "
+    "Rated Money Owner",
+    "<cf>This user</c> is the owner of <cl>Rated Money</c>. "
     "They have the ability to <cg>promote admins</c>, manages the entire <cg>community</c> "
-    "and <co>moderation team</c> and has <cy>all permissions</c> within <cl>Rated Maps</c>.",
+    "and <co>moderation team</c> and has <cy>all permissions</c> within <cl>Rated Money</c>.",
     "RL_badgeOwner.png"_spr,
     "RL_badgeOwnerBig.png"_spr,
     RLBadgeKind::Owner, 1
 };
 inline constexpr RLBadgeInfo g_InfoDeveloper{
     "rl-developer"_spr,
-    "Rated Maps Developer",
-    "<cf>This user</c> is a developer for <cl>Rated Maps</c>. "
+    "Rated Money Developer",
+    "<cf>This user</c> is a developer for <cl>Rated Money</c>. "
     "They are responsible for maintaining the <co>Backend Server</c>, <cb>Discord Bot</c>, "
     "<cp>Geode Mod</c> and other infrastructure of this mod.",
     "RL_badgeDeveloper.png"_spr,
@@ -110,7 +110,7 @@ inline constexpr RLBadgeInfo g_InfoClassicAdmin{
     "Classic Map Admin",
     "<cr>Classic Map Admin</c> has the ability to <cy>rate classic levels</c>, "
     "<cb>suggest classic levels</c>, <cc>manage Featured Maps</c> and <cg>promote users "
-    "into Classic Map Mod</c> for <cl>Rated Maps</c>.",
+    "into Classic Map Mod</c> for <cl>Rated Money</c>.",
     "RL_badgeAdmin01.png"_spr,
     "RL_badgeAdminBig.png"_spr,
     RLBadgeKind::ClassicAdmin, 2
@@ -120,7 +120,7 @@ inline constexpr RLBadgeInfo g_InfoPlatAdmin{
     "Platformer Map Admin",
     "<cr>Platformer Map Admin</c> has the ability to <cy>rate platformer levels</c>, "
     "<cb>suggest platformer levels</c>, <cc>manage Featured Maps</c> and <cg>promote users "
-    "into Platformer Map Mod</c> for <cl>Rated Maps</c>.",
+    "into Platformer Map Mod</c> for <cl>Rated Money</c>.",
     "RL_badgePlatAdmin01.png"_spr,
     RLBadgeInfo::DEFAULT,
     RLBadgeKind::PlatAdmin, 2
@@ -155,7 +155,7 @@ inline constexpr RLBadgeInfo g_InfoLeaderboardMod{
     "rl-lb-mod"_spr,
     "LB Map Mod",
     "<cb>Leaderboard Map Moderator</c> is responsible for <co>managing and "
-    "moderating the leaderboard</c> section of <cl>Rated Maps</c>.",
+    "moderating the leaderboard</c> section of <cl>Rated Money</c>.",
     "RL_badgelbMod01.png"_spr,
     RLBadgeInfo::DEFAULT,
     RLBadgeKind::LeaderboardMod, 3
@@ -164,7 +164,7 @@ inline constexpr RLBadgeInfo g_InfoLeaderboardMod{
 inline constexpr RLBadgeInfo g_InfoSupporter{
     "rl-supporter"_spr,
     "Map Supporter",
-    "<cp>Map Supporter</c> are those who donated to support the development of <cl>Rated Maps</c>.",
+    "<cp>Map Supporter</c> are those who donated to support the development of <cl>Rated Money</c>.",
     "RL_badgeSupporter.png"_spr,
     "RL_badgeSupporterBig.png"_spr,
     RLBadgeKind::Supporter, 4
@@ -172,7 +172,7 @@ inline constexpr RLBadgeInfo g_InfoSupporter{
 inline constexpr RLBadgeInfo g_InfoBooster{
     "rl-booster"_spr,
     "Map Booster",
-    "<ca>Map Booster</c> are those who boosted the <cl>Rated Maps Discord server</c>, "
+    "<ca>Map Booster</c> are those who boosted the <cl>Rated Money Discord server</c>, "
     "they also have the same benefits as <cp>Map Supporter</c>.",
     "RL_badgeBooster.png"_spr,
     RLBadgeInfo::DEFAULT,
