@@ -188,11 +188,11 @@ bool RLMenuLayer::init() {
     mainMenu->addChild(gauntletItem);
 
     // spire coming soon
-    auto spireSpr = CCSprite::createWithSpriteFrameName("RL_spire01.png"_spr);
-    auto spireItem =
-        CCMenuItemSpriteExtra::create(spireSpr, this, menu_selector(RLMenuLayer::onLayoutSpire));
-    spireItem->setID("spire-button");
-    mainMenu->addChild(spireItem);
+   // auto spireSpr = CCSprite::createWithSpriteFrameName("RL_spire01.png"_spr);
+   // auto spireItem =
+   //     CCMenuItemSpriteExtra::create(spireSpr, this, menu_selector(RLMenuLayer::onLayoutSpire));
+   // spireItem->setID("spire-button");
+   // mainMenu->addChild(spireItem);
 
     auto sentSpr = CCSprite::createWithSpriteFrameName("RL_sent01.png"_spr);
     auto sentItem =
@@ -224,11 +224,11 @@ bool RLMenuLayer::init() {
     monthlyItem->setID("monthly-maps-button");
     mainMenu->addChild(monthlyItem);
 
-    CCSprite* unknownSpr = CCSpriteGrayscale::createWithSpriteFrameName("RL_unknownBtn.png"_spr);
-    auto unknownItem = CCMenuItemSpriteExtra::create(
-        unknownSpr, this, menu_selector(RLMenuLayer::onUnknownButton));
-    unknownItem->setID("unknown-button");
-    mainMenu->addChild(unknownItem);
+  //  CCSprite* unknownSpr = CCSpriteGrayscale::createWithSpriteFrameName("RL_unknownBtn.png"_spr);
+  //  auto unknownItem = CCMenuItemSpriteExtra::create(
+  //      unknownSpr, this, menu_selector(RLMenuLayer::onUnknownButton));
+  //  unknownItem->setID("unknown-button");
+  //  mainMenu->addChild(unknownItem);
 
     mainMenu->updateLayout();
 
