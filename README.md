@@ -1,4 +1,5 @@
-# Rated Layouts fork
+# Rated Money
+the name of this project is still laughably inconsistent
 
 for the world
 

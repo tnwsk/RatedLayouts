@@ -1,3 +1,8 @@
+# v2.1.6
+- removed unused buttons
+- changed badge names (Rated Maps -> Rated Money)
+
+
 # v2.1.5
 - dialog fixes
 - new textures coming soon thanks wiyn
